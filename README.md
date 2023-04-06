@@ -6,6 +6,8 @@ Repo for goofing around with solving the GTOC_1 problem in Julia
 - [Problem Description](https://sophia.estec.esa.int/gtoc_portal/wp-content/uploads/2012/11/ACT-MEM-MAD-GTOC1-The-Problem_V4.pdf)
 
 # Gameplan
+0. Plotting
+   1. Show some trajectory in the Sun-centered J2000 frame
 1. Execute feasible solution
    1. Dynamics models
       1. Ephemeris
