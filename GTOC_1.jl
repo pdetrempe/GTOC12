@@ -124,5 +124,5 @@ end
 
 earth_orbit = get_planet_orbit(;planet="Earth", ET=ET_0)
 
-plot(Earth_pos_array[:,1], Earth_pos_array[:,2], Marker='o')
-
+plot(earth_orbit,label="Earth")
+plot!(asteroid_orbit, label="Asteroid")
