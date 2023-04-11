@@ -134,16 +134,34 @@ plot!(asteroid_orbit, label="Asteroid")
 # https://ai.jpl.nasa.gov/public/documents/papers/AAS-22-015-Paper.pdf
 # x= [p,f,g,h,k,l]
 
-function keplerian2mean_equinoctial(;a, e, i, Ω, ω, ν)
-p = a*(1-e^2)
-f = ecos(Ω + ω)
-g = e*sin(Ω + ω)
-h = tan(i/2)*cos(Ω)
-k = tan(i/2)*sin(Ω)
-l = Ω + ω + ν
+function keplerian2MEE(;a, e, i, Ω, ω, ν)
+    """
+    Converts from classical Keplerian elements to modified equinoctial elements
+    """
+    p = a*(1-e^2)
+    f = e*cos(Ω + ω)
+    g = e*sin(Ω + ω)
+    h = tan(i/2)*cos(Ω)
+    k = tan(i/2)*sin(Ω)
+    l = Ω + ω + ν
 
-p, f, g, h, k, l
+    p, f, g, h, k, l
 
+end
+
+function MME2keplerian(;p, f, g, h, k, l)
+    # See https://spsweb.fltops.jpl.nasa.gov/portaldataops/mpg/MPG_Docs/Source%20Docs/EquinoctalElements-modified.pdf
+
+    a = p/(1 - f^2 - g^2)
+    e = sqrt(f^2 + g^2)
+    i = atan( 2*sqrt(h^2 + k^2), 1-h^2-k^2)
+    Ω = atan( k,h )
+    ω = atan( gh-fk, fh+gk )
+    ν = l - (Ω + ω)
+
+    
+
+    a, e, i, Ω, ω, ν
 end
 
 q(;f, g, L) = 1 + f*cos(L) + g*sin(L)
@@ -160,7 +178,9 @@ end
 function B_equinoctial(MEE; μ)
     # Eq 3
     p, f, g, h, k, l = MEE
-
+    q = q(f=f, g=g, L=l)
+    s = s(h=h, k=k)
+    
     B = [               0,                2*p/q*sqrt(p/μ),                                    0
          sqrt(p/μ)*sin(l),  sqrt(p/μ)*q*((q+1)*cos(l) + f), -sqrt(p/μ)*g/q*(h*sin(l) - k*cos(l))
         -sqrt(p/μ)*cos(l),  sqrt(p/μ)*q*((q+1)*sin(l) + g), -sqrt(p/μ)*g/q*(h*sin(l) - k*cos(l))
