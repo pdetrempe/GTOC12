@@ -7,17 +7,17 @@ Repo for goofing around with solving the GTOC_1 problem in Julia
 
 # Gameplan
 0. Plotting
-   1. Show some trajectory in the Sun-centered J2000 frame
+   - [x] Show some trajectory in the Sun-centered J2000 frame
 1. Execute feasible solution
    1. Dynamics models
-      1. Ephemeris
+      - [x] Ephemeris
       2. Spacecraft
          1. Sun gravity
          2. Flybys
             1. Minimum Perilune constraint
          3. Actuator model
-      3. Asteroid
-         1. Closed-form Keplerian orbit
+      - [x] Asteroid
+         - [x] Closed-form Keplerian orbit
    2. Evaluate Objective Function
    3. Use the two above to recreate the winning solution
 2. Converge perturbed winning solution with shooting methods

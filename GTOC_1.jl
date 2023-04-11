@@ -4,6 +4,7 @@ using Downloads: download
 using Plots
 using PlanetOrbits
 import PlanetOrbits: m2au
+using OrdinaryDiffEq
 
 const LSK = "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/lsk/naif0012.tls"
 const SPK = "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/spk/planets/de440.bsp"
@@ -82,14 +83,7 @@ end
 # Convert the calendar date to ephemeris seconds past J2000
 # ET_J2000 = TDBEpoch(0days, origin=:j2000)
 # ETs = value.(seconds.(AstroTime.j2000.(launch_dates_ET))) .- value(seconds(AstroTime.j2000(ET_J2000)))
-ETs = Epoch_to_SPICE_ET.(launch_dates_ET)
 ET_0 = launch_dates_ET[1]
-
-# Get the position of Mars at `et` w.r.t. Earth
-spkpos_out =  spkpos.("Earth", ETs, "ECLIPJ2000", "none", "Sun")
-
-Earth_pos = [x[1] for x in spkpos_out]
-Earth_pos_array = permutedims(hcat(Earth_pos...))
 
 ## Plot Earth and asteroid positions at epoch
 # Plot planet paths
@@ -126,3 +120,81 @@ earth_orbit = get_planet_orbit(;planet="Earth", ET=ET_0)
 
 plot(earth_orbit,label="Earth")
 plot!(asteroid_orbit, label="Asteroid")
+
+
+## Just have the spacecraft fire tangentially and plot
+# Couple options for dynamics:
+#   1. Cartesian (with inverse square law)
+#   2. Orbital elements (Map effects onto OE directly):
+#       - This feels better
+#       - May not be better for targetting
+#       - ^May not matter for AutoDiff, that would be cool
+
+# Let's use the Mean Equinoctial Elements:
+# https://ai.jpl.nasa.gov/public/documents/papers/AAS-22-015-Paper.pdf
+# x= [p,f,g,h,k,l]
+
+function keplerian2mean_equinoctial(;a, e, i, Ω, ω, ν)
+p = a*(1-e^2)
+f = ecos(Ω + ω)
+g = e*sin(Ω + ω)
+h = tan(i/2)*cos(Ω)
+k = tan(i/2)*sin(Ω)
+l = Ω + ω + ν
+
+p, f, g, h, k, l
+
+end
+
+q(;f, g, L) = 1 + f*cos(L) + g*sin(L)
+s(;h, k) = sqrt(1 + h^2 + k^2)
+
+function A_equinoctial(MEE; μ)
+    # Eq 2
+    p, f, g, h, k, l = MEE
+    q = q(f=f, g=g, L=l)
+
+    A = [0;0;0;0;0;sqrt(μ*p)*(q/p)^2]
+end
+
+function B_equinoctial(MEE; μ)
+    # Eq 3
+    p, f, g, h, k, l = MEE
+
+    B = [               0,                2*p/q*sqrt(p/μ),                                    0
+         sqrt(p/μ)*sin(l),  sqrt(p/μ)*q*((q+1)*cos(l) + f), -sqrt(p/μ)*g/q*(h*sin(l) - k*cos(l))
+        -sqrt(p/μ)*cos(l),  sqrt(p/μ)*q*((q+1)*sin(l) + g), -sqrt(p/μ)*g/q*(h*sin(l) - k*cos(l))
+                        0,                               0,             sqrt(p/μ)*s*cos(l)/(2*q)
+                        0,                               0,             sqrt(p/μ)*s*sin(l)/(2*q)
+                        0,                               0,  sqrt(p/μ)*1/q*(h*sin(l) - k*cos(l))]
+end
+
+function get_control(MEE; params=p) # Get control thrust direction and magnitude [0, 1]
+
+    # Just roll with tangential firing to sanity check
+    # û, T = 
+end
+
+function EOM_MEE!(ẋ, x, p, t)
+    μ, c, δ = p # problem parameters
+    MEE = x[1:6]
+    m   = x[7]
+
+    A = A_equinoctial(MEE; μ=μ)
+    B = B_equinoctial(MEE; μ=μ)
+    û, T = get_control(MEE; params=p) # Get control thrust direction and magnitude [0, 1]
+
+    ẋ[:] = A*x + T*δ/m * B
+
+end
+
+function rober!(du, u, p, t)
+    y₁, y₂, y₃ = u
+    k₁, k₂, k₃ = p
+    du[1] = -k₁ * y₁ + k₃ * y₂ * y₃
+    du[2] = k₁ * y₁ - k₂ * y₂^2 - k₃ * y₂ * y₃
+    du[3] = k₂ * y₂^2
+    nothing
+end
+prob = ODEProblem(rober!, [1.0, 0.0, 0.0], (0.0, 1e5), [0.04, 3e7, 1e4])
+sol = solve(prob)
