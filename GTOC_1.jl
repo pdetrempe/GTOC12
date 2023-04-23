@@ -3,8 +3,9 @@ using AstroTime
 using Downloads: download
 using Plots
 using PlanetOrbits
-import PlanetOrbits: m2au
+import PlanetOrbits: m2au, _trueanom_from_eccanom
 using OrdinaryDiffEq
+using LinearAlgebra
 
 const LSK = "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/lsk/naif0012.tls"
 const SPK = "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/spk/planets/de440.bsp"
@@ -56,6 +57,7 @@ asteroid_orbit = orbit(
 ## Spacecraft
 m₀ = 1500; # kg
 Isp = 2500; # seconds
+g₀ = 9.80665 # Wikipedia
 T_max = .04; # Newtons
 
 ## Mission
@@ -90,11 +92,14 @@ ET_0 = launch_dates_ET[1]
 # Start with a Keplerian approximation (better compatibility with
 # generation of gradients via AutoDiff)
 
+function get_osc_elt(;planet::String, ET::Epoch, frame="ECLIPJ2000", CB="Sun")
+    (state, _) = spkezr(planet, Epoch_to_SPICE_ET(ET), frame, "none", CB)
+    μ_CB = bodvrd(CB, "GM")[1]
+    OE = oscelt(state, Epoch_to_SPICE_ET(ET), μ_CB)
+end
+
 function get_planet_orbit(;planet::String, ET::Epoch, frame="ECLIPJ2000", CB="Sun")
-(state, _) = spkezr(planet, Epoch_to_SPICE_ET(ET), frame, "none", CB)
-μ_CB = bodvrd(CB, "GM")[1]
-μ_☉ = bodvrd("Sun", "GM")[1]
-OE = oscelt(state, Epoch_to_SPICE_ET(ET), μ_CB)
+OE = get_osc_elt(;planet=planet, ET=ET, frame=frame, CB=CB)
 
 e = OE[2]
 a = OE[1]/(1-e) * 1000 # convert from km to m
@@ -102,6 +107,9 @@ i = OE[3]
 Ω = OE[4]
 ω = OE[5]
 M = OE[6]
+
+μ_CB = bodvrd(CB, "GM")[1]
+μ_☉ = bodvrd("Sun", "GM")[1]
 
 
 orbit(    
@@ -139,13 +147,13 @@ function keplerian2MEE(;a, e, i, Ω, ω, ν)
     Converts from classical Keplerian elements to modified equinoctial elements
     """
     p = a*(1-e^2)
-    f = e*cos(Ω + ω)
+    f = e*cos(Ω + ω)
     g = e*sin(Ω + ω)
     h = tan(i/2)*cos(Ω)
     k = tan(i/2)*sin(Ω)
     l = Ω + ω + ν
 
-    p, f, g, h, k, l
+    [p, f, g, h, k, l]
 
 end
 
@@ -161,16 +169,19 @@ function MME2keplerian(;p, f, g, h, k, l)
 
     
 
-    a, e, i, Ω, ω, ν
+    [a, e, i, Ω, ω, ν]
 end
 
-q(;f, g, L) = 1 + f*cos(L) + g*sin(L)
-s(;h, k) = sqrt(1 + h^2 + k^2)
+get_q(;f, g, L) = 1 + f*cos(L) + g*sin(L)
+get_s(;h, k) = sqrt(1 + h^2 + k^2)
+get_α(;h, k) = h^2 - k^2
+get_r(;p, w) = p/w
+get_w(;f::Number, g::Number, L::Number) = 1+f*cos(L)+g*sin(L)
 
 function A_equinoctial(MEE; μ)
     # Eq 2
     p, f, g, h, k, l = MEE
-    q = q(f=f, g=g, L=l)
+    q = get_q(f=f, g=g, L=l)
 
     A = [0;0;0;0;0;sqrt(μ*p)*(q/p)^2]
 end
@@ -178,43 +189,92 @@ end
 function B_equinoctial(MEE; μ)
     # Eq 3
     p, f, g, h, k, l = MEE
-    q = q(f=f, g=g, L=l)
-    s = s(h=h, k=k)
+    q = get_q(f=f, g=g, L=l)
+    s = get_s(h=h, k=k)
     
-    B = [               0,                2*p/q*sqrt(p/μ),                                    0
-         sqrt(p/μ)*sin(l),  sqrt(p/μ)*q*((q+1)*cos(l) + f), -sqrt(p/μ)*g/q*(h*sin(l) - k*cos(l))
-        -sqrt(p/μ)*cos(l),  sqrt(p/μ)*q*((q+1)*sin(l) + g), -sqrt(p/μ)*g/q*(h*sin(l) - k*cos(l))
-                        0,                               0,             sqrt(p/μ)*s*cos(l)/(2*q)
-                        0,                               0,             sqrt(p/μ)*s*sin(l)/(2*q)
-                        0,                               0,  sqrt(p/μ)*1/q*(h*sin(l) - k*cos(l))]
+    B = [               0                2*p/q*sqrt(p/μ)                                    0
+         sqrt(p/μ)*sin(l)  sqrt(p/μ)*q*((q+1)*cos(l) + f) -sqrt(p/μ)*g/q*(h*sin(l) - k*cos(l))
+        -sqrt(p/μ)*cos(l)  sqrt(p/μ)*q*((q+1)*sin(l) + g) -sqrt(p/μ)*g/q*(h*sin(l) - k*cos(l))
+                        0                               0             sqrt(p/μ)*s*cos(l)/(2*q)
+                        0                               0             sqrt(p/μ)*s*sin(l)/(2*q)
+                        0                               0  sqrt(p/μ)*1/q*(h*sin(l) - k*cos(l))]
+end
+
+function MEE2Cartesian(MEE; μ)
+    # Source: https://spsweb.fltops.jpl.nasa.gov/portaldataops/mpg/MPG_Docs/Source%20Docs/EquinoctalElements-modified.pdf
+    # Equations 3a & 3b
+    p, f, g, h, k, l = MEE
+    
+    α = get_α(h=h, k=k)
+    s = get_s(h=h, k=k)
+    w = get_w(;f=g, g=g, L=l) 
+
+    r = p/w
+    r⃗ = r/(s^2) * [cos(l) + α^2 * cos(l) + 2*h*k*sin(l)
+                    sin(l) - α^2 * sin(l) + 2*h*k*cos(l)
+                    2*(h*sin(l) - k*cos(l))]
+
+    v⃗ = 1/s^2 * sqrt(μ/p) *[-(sin(l) +α^2*sin(l) - 2*h*k*cos(l) + g -2*f*h*k + α^2*g)
+                            -(-cos(l) + α^2*sin(l) + 2*h*k*sin(l) - f +2*g*h*k + α^2*g)
+                            2*(h*cos(l) + k*sin(l) + f*h + g*k)]
+
+    vcat(r⃗, v⃗)
 end
 
 function get_control(MEE; params=p) # Get control thrust direction and magnitude [0, 1]
+    μ, c, T = params # problem parameters
+
+    x⃗ = MEE2Cartesian(MEE; μ)
+    v⃗ = x⃗[4:6]
 
     # Just roll with tangential firing to sanity check
-    # û, T = 
+    û = v⃗/norm(v⃗)
+    δ = 1
+    
+    û, δ 
 end
 
 function EOM_MEE!(ẋ, x, p, t)
-    μ, c, δ = p # problem parameters
+    μ, c, T = p # problem parameters
     MEE = x[1:6]
     m   = x[7]
 
     A = A_equinoctial(MEE; μ=μ)
     B = B_equinoctial(MEE; μ=μ)
-    û, T = get_control(MEE; params=p) # Get control thrust direction and magnitude [0, 1]
+    û, δ  = get_control(MEE; params=p) # Get control thrust direction and magnitude [0, 1]
 
-    ẋ[:] = A*x + T*δ/m * B
+    MEE_dot = A + T*δ/m * B * û
+    ṁ = -δ*T/(c)
+
+    ẋ[:] = vcat( MEE_dot, ṁ )
 
 end
 
-function rober!(du, u, p, t)
-    y₁, y₂, y₃ = u
-    k₁, k₂, k₃ = p
-    du[1] = -k₁ * y₁ + k₃ * y₂ * y₃
-    du[2] = k₁ * y₁ - k₂ * y₂^2 - k₃ * y₂ * y₃
-    du[3] = k₂ * y₂^2
-    nothing
-end
-prob = ODEProblem(rober!, [1.0, 0.0, 0.0], (0.0, 1e5), [0.04, 3e7, 1e4])
-sol = solve(prob)
+# Start spacecraft at Earth and propagate with the tangential guidance
+tspan = (0, 3600)
+
+M_earth = PlanetOrbits.trueanom
+MEE₀ = keplerian2MEE(;
+a = earth_orbit.a /m2au,
+e = earth_orbit.e,
+i = earth_orbit.i,
+Ω = earth_orbit.Ω, 
+ω = earth_orbit.ω,
+ν = trueanom(earth_orbit, tspan[1]) )
+
+# Problem parameters
+μ_☉ = bodvrd("Sun", "GM")[1] # Sun central body
+c = Isp * g₀ # exhaust velocity
+
+
+parameters = ( μ_☉, c, T_max)
+prob = ODEProblem(EOM_MEE!, vcat(MEE₀, m₀), tspan, parameters)
+sol = solve(prob, Tsit5())
+
+MEE_out = [sol[1:6,i] for i = 1:length(sol)]
+
+# Convert the Mean Equinoctial Elements to Cartesian
+x_spacecraft = MEE2Cartesian.(MEE_out; μ=μ_☉)
+r_spacecraft = getindex.(x_spacecraft', 1:3)'.*m2au
+
+plot(r_spacecraft[:,1], r_spacecraft[:,2])
