@@ -1,7 +1,4 @@
-using PlanetOrbits
-import PlanetOrbits: m2au, _trueanom_from_eccanom
-using SPICE
-using AstroTime
+export meananom_to_ref_time, get_osc_elt, get_planet_orbit
 
 # Compute asteroid reference time from mean anomaly
 # Because the PlanetOrbits package uses reference time exclusively
@@ -40,3 +37,4 @@ function get_planet_orbit(;planet::String, ET::Epoch, frame="ECLIPJ2000", CB="Su
     tref=value(modified_julian(ET)))
 
 end
+

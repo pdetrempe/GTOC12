@@ -1,5 +1,4 @@
-using AstroTime
-
+export Epoch_to_SPICE_ET
 
 function Epoch_to_SPICE_ET(epoch::Epoch)
     ET_J2000 = TDBEpoch(0days, origin=:j2000)

@@ -1,8 +1,24 @@
+name = "GTOC1"
+uuid = "3a6bd83a-25ce-4823-999b-3d2bbc7d92ef"
+authors = ["Paul DeTrempe"]
+version = "1.0.0-DEV"
+
 [deps]
 AstroTime = "c61b5328-d09d-5e37-a9a8-0eb41c39009c"
 DifferentialEquations = "0c46a032-eb83-5123-abaf-570d42b7fbaa"
 Downloads = "f43a241f-c20a-4ad4-852c-f6b1247861c6"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 OrdinaryDiffEq = "1dea7af3-3e70-54e6-95c3-0bf5283fa5ed"
 PlanetOrbits = "fd6f9641-d78f-43ce-a379-ceb0bddb468a"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
+Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
 SPICE = "5bab7191-041a-5c2e-a744-024b9c3a5062"
+
+[compat]
+julia = "1"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]

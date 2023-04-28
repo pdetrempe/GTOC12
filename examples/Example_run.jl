@@ -1,11 +1,3 @@
-using SPICE
-using AstroTime
-using Plots
-using PlanetOrbits
-import PlanetOrbits: m2au, _trueanom_from_eccanom
-using OrdinaryDiffEq
-using LinearAlgebra
-
 using GTOC1
 
 ## Furnish relevant SPICE kernels

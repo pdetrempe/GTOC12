@@ -1,3 +1,4 @@
+export keplerian2MEE, MME2keplerian, MEE2Cartesian, EOM_MEE!
 
 ## Intermediate quantities used in MEE calculations
 get_q(;f, g, L) = 1 + f*cos(L) + g*sin(L)
@@ -98,7 +99,7 @@ end
 
 
 function get_control(MEE; params) # Get control thrust direction and magnitude [0, 1]
-    μ = params(1) # problem parameters
+    μ = params[1] # problem parameters
 
     x⃗ = MEE2Cartesian(MEE; μ)
     v⃗ = x⃗[4:6]
