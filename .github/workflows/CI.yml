@@ -64,6 +64,7 @@ jobs:
   #     run: julia --project=. -e 'using JET; analyze()'
 
   check-quality:
+    name: Check Quality
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout Code
