@@ -12,6 +12,8 @@ module GTOC1
     # Dynamics
     include("dynamics/keplerian_elements.jl")
     include("dynamics/modified_equinoctial_elements.jl")
+    include("dynamics/frame_conversions.jl")
+
 
     # Utilities
     include("utils/time.jl")

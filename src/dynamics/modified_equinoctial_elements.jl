@@ -91,7 +91,7 @@ function B_equinoctial(MEE; μ)
     
     B = [               0                2*p/q*sqrt(p/μ)                                    0
          sqrt(p/μ)*sin(l)  sqrt(p/μ)*q*((q+1)*cos(l) + f) -sqrt(p/μ)*g/q*(h*sin(l) - k*cos(l))
-        -sqrt(p/μ)*cos(l)  sqrt(p/μ)*q*((q+1)*sin(l) + g) -sqrt(p/μ)*g/q*(h*sin(l) - k*cos(l))
+        -sqrt(p/μ)*cos(l)  sqrt(p/μ)*q*((q+1)*sin(l) + g)  sqrt(p/μ)*f/q*(h*sin(l) - k*cos(l))
                         0                               0             sqrt(p/μ)*s*cos(l)/(2*q)
                         0                               0             sqrt(p/μ)*s*sin(l)/(2*q)
                         0                               0  sqrt(p/μ)*1/q*(h*sin(l) - k*cos(l))]
@@ -102,13 +102,14 @@ function get_control(MEE; params) # Get control thrust direction and magnitude [
     μ = params[1] # problem parameters
 
     x⃗ = MEE2Cartesian(MEE; μ)
-    v⃗ = x⃗[4:6]
+    v⃗ = view(x⃗, 4:6)
+    R_inrt2lvlh = DCM_inertial_to_lvlh(x⃗)
 
     # Just roll with tangential firing to sanity check
-    û = v⃗/norm(v⃗) # thrust along velocity vector
+    û_LVLH = R_inrt2lvlh*v⃗/norm(v⃗) # thrust along velocity vector (in LVLH frame)
     δ = 1         # Full throttle
     
-    û, δ 
+    û_LVLH, δ 
 end
 
 function EOM_MEE!(ẋ, x, p, t)

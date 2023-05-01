@@ -1,4 +1,5 @@
 using GTOC1
+using DifferentialEquations
 
 ## Furnish relevant SPICE kernels
 furnish_all_kernels()
@@ -77,7 +78,7 @@ plot!(asteroid_orbit, label="Asteroid")
 
 
 # Start spacecraft at Earth and propagate with the tangential guidance
-tspan = (0, 1*3600)
+tspan = (0, 400*24*3600)
 
 M_earth = PlanetOrbits.trueanom
 MEE₀ = keplerian2MEE(;
@@ -89,13 +90,13 @@ i = earth_orbit.i,
 ν = trueanom(earth_orbit, tspan[1]) ) # Start off at Earth
 
 # Problem parameters
-μ_☉ = bodvrd("Sun", "GM")[1] # Sun central body
+μ_☉ = bodvrd("Sun", "GM")[1] * (1000)^3 # Sun central body, km³/s² → m³/s²
 c = Isp * g₀ # exhaust velocity
 
 
 parameters = ( μ_☉, c, T_max)
 prob = ODEProblem(EOM_MEE!, vcat(MEE₀, m₀), tspan, parameters)
-sol = solve(prob, Tsit5())
+sol = solve(prob, alg_hints = [:stiff], reltol = 1e-10, abstol = 1e-6)
 
 MEE_out = [sol[1:6,i] for i = 1:lastindex(sol)]
 
@@ -104,3 +105,4 @@ x_spacecraft = MEE2Cartesian.(MEE_out; μ=μ_☉)
 r_spacecraft = getindex.(x_spacecraft', 1:3)'.*m2au
 
 plot!(r_spacecraft[:,1], r_spacecraft[:,2], label="Spacecraft")
+xflip!(false)
