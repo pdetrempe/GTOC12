@@ -64,6 +64,54 @@ function MEE2Cartesian(MEE; μ)
     vcat(r⃗, v⃗)
 end
 
+function Cartesian2MEE(x⃗; μ)
+    """
+    https://degenerateconic.com/modified-equinoctial-elements.html
+    """
+    r⃗ = x⃗[1:3]
+    v⃗ = x⃗[4:6]
+    h⃗ = cross(r⃗, v⃗)
+
+    r = norm(r)
+    v = norm(v)
+    h = norm(h)
+
+    r̂ = r⃗/r
+    ĥ = h⃗/h
+    v̂ = (r*v⃗ - r⋅v)/h
+
+    p = h*h/μ
+    k = ĥ[1]/(1 + ĥ[3])
+    h = -ĥ[2]/(1 + ĥ[3])
+    s = √(1 + h^2 + k^2)
+
+    e⃗ = cross(v⃗, h⃗)/μ - r̂
+
+    # Initialize intermediate values
+    f̂ = zeros(typeof(k), 3)
+    ĝ = zeros(typeof(k), 3)
+
+
+    f̂[1] = 1 - k^2 + h^2
+    f̂[2] = 2*k*h
+    f̂[3] = -2k
+    
+    ĝ[1] = 2*k*h
+    ĝ[2] = 1 + k^2 - h^2
+    ĝ[3] = 2h
+
+    f̂ = f̂ / s^2
+    ĝ = ĝ / s^2
+ 
+    f = e⃗ ⋅ f̂
+    g = e⃗ ⋅ ĝ
+    L = atan2( r̂[2] - v̂[1], r̂[1] + v̂[2] )
+
+ 
+    return [p;f;g;h;k;L]
+    
+end
+
 
 ## MEE dynamics
 
@@ -99,7 +147,7 @@ end
 
 
 function get_control(MEE; params) # Get control thrust direction and magnitude [0, 1]
-    μ = params[1] # problem parameters
+    μ = params.μ # problem parameters
 
     x⃗ = MEE2Cartesian(MEE; μ)
     v⃗ = view(x⃗, 4:6)
@@ -117,7 +165,7 @@ function EOM_MEE!(ẋ, x, p, t)
     See: https://ai.jpl.nasa.gov/public/documents/papers/AAS-22-015-Paper.pdf
     Eq 1
     """
-    μ, c, T = p # problem parameters
+    μ, c, T = p.μ, p.c, p.T_max # problem parameters
     MEE = x[1:6]
     m   = x[7]
 

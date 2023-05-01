@@ -93,8 +93,22 @@ i = earth_orbit.i,
 μ_☉ = bodvrd("Sun", "GM")[1] * (1000)^3 # Sun central body, km³/s² → m³/s²
 c = Isp * g₀ # exhaust velocity
 
+struct GTOCProblemParams
+    μ::Float64      # Central body (Sun) standard gravitational parameter [m³/s²]
+    c::Float64      # Thruster exhaust velocity [m/s]
+    T_max::Float64  # Max thruster force [N]
+    ΔV_LV_inrt::Vector{Float64} # Initial ΔV w.r.t. Earth from Launch Vehicle (not to exceed problem value) [m/s]
 
-parameters = ( μ_☉, c, T_max)
+    # kwarg constructor
+    function GTOCProblemParams(;μ, c, T_max, ΔV_LV_inrt)
+        new(μ, c, T_max, ΔV_LV_inrt)
+    end
+end
+
+# Initial DV kick
+DV₀ = [0; v∞_launch; 0]
+
+parameters = GTOCProblemParams( μ=μ_☉, c=c, T_max=T_max, ΔV_LV_inrt=DV₀)
 prob = ODEProblem(EOM_MEE!, vcat(MEE₀, m₀), tspan, parameters)
 sol = solve(prob, alg_hints = [:stiff], reltol = 1e-10, abstol = 1e-6)
 
