@@ -69,12 +69,12 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v2
-    - name: Setup Julia
-      uses: julia-actions/setup-julia@v1
-      uses: julia-actions/cache@v1
-      uses: julia-actions/julia-buildpkg@v1
-      with:
-        version: ${{ matrix.version }}
+      - name: Setup Julia
+        uses: julia-actions/setup-julia@v1
+        uses: julia-actions/cache@v1
+        uses: julia-actions/julia-buildpkg@v1
+        with:
+          version: ${{ matrix.version }}
       - name: Install Dependencies
         run: julia --project=. -e 'using Pkg; Pkg.add("Aqua")'
       - name: Check Quality
