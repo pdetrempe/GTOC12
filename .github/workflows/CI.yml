@@ -12,15 +12,14 @@ concurrency:
   cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}
 jobs:
   test:
+    needs: [format_check]
     name: Julia ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }} - ${{ github.event_name }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         version:
-          - '1.0'
           - '1.8'
-          - 'nightly'
         os:
           - ubuntu-latest
         arch:
@@ -34,3 +33,50 @@ jobs:
       - uses: julia-actions/cache@v1
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-runtest@v1
+
+  format_check:
+    name: Check Formatting
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v2
+      - uses: julia-actions/setup-julia@v1
+        with:
+          version: ${{ matrix.version }}
+          arch: ${{ matrix.arch }}
+      - uses: julia-actions/cache@v1
+      - uses: julia-actions/julia-buildpkg@v1
+      - run: julia --project=. -e 'using JuliaFormatter; format("--check", "src")'
+
+  # check-type-stability:
+  # runs-on: ${{ matrix.os }}
+  # steps:
+  #   - name: Checkout Code
+  #     uses: actions/checkout@v2
+  #   - name: Setup Julia
+  #     uses: julia-actions/setup-julia@v1
+  #     uses: julia-actions/cache@v1
+  #     uses: julia-actions/julia-buildpkg@v1
+  #     with:
+  #       version: ${{ matrix.version }}
+  #   - name: Install Dependencies
+  #     run: julia --project=. -e 'using Pkg; Pkg.add("JET")'
+  #   - name: Check Type Stability
+  #     run: julia --project=. -e 'using JET; analyze()'
+
+  check-quality:
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2
+    - name: Setup Julia
+      uses: julia-actions/setup-julia@v1
+      uses: julia-actions/cache@v1
+      uses: julia-actions/julia-buildpkg@v1
+      with:
+        version: ${{ matrix.version }}
+      - name: Install Dependencies
+        run: julia --project=. -e 'using Pkg; Pkg.add("Aqua")'
+      - name: Check Quality
+        run: julia --project=. -e 'using Aqua;   Aqua.test_all(GTOC1)'
+
+
