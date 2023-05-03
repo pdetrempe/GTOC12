@@ -109,8 +109,8 @@ end
 DV₀ = [0; v∞_launch; 0]
 
 parameters = GTOCProblemParams( μ=μ_☉, c=c, T_max=T_max, ΔV_LV_inrt=DV₀)
-prob = ODEProblem(EOM_MEE!, vcat(MEE₀, m₀), tspan, parameters)
-sol = solve(prob, alg_hints = [:stiff], reltol = 1e-10, abstol = 1e-6)
+prob = ODEProblem(EOM_MEE!, vcat(MEE₀, m₀), tspan, parameters, callback=LV_callback)
+sol = solve(prob, tstops =1, alg_hints = [:stiff], reltol = 1e-10, abstol = 1e-6)
 
 MEE_out = [sol[1:6,i] for i = 1:lastindex(sol)]
 
