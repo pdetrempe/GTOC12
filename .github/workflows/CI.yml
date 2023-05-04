@@ -1,38 +1,65 @@
-name: CI
-on:
-  push:
-    branches:
-      - main
-    tags: ['*']
-  pull_request:
-concurrency:
-  # Skip intermediate builds: always.
-  # Cancel intermediate builds: only if it is a pull request build.
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}
+# name: CI
+# on:
+#   push:
+#     branches:
+#       - main
+#     tags: ['*']
+#   pull_request:
+# concurrency:
+#   # Skip intermediate builds: always.
+#   # Cancel intermediate builds: only if it is a pull request build.
+#   group: ${{ github.workflow }}-${{ github.ref }}
+#   cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}
+# jobs:
+#   test:
+#     needs: [format_check]
+#     name: Julia ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }} - ${{ github.event_name }}
+#     runs-on: ${{ matrix.os }}
+#     strategy:
+#       fail-fast: false
+#       matrix:
+#         version:
+#           - '1.8'
+#         os:
+#           - ubuntu-latest
+#         arch:
+#           - x64
+#     steps:
+#       - uses: actions/checkout@v2
+#       - uses: julia-actions/setup-julia@v1
+#         with:
+#           version: ${{ matrix.version }}
+#           arch: ${{ matrix.arch }}
+#       - uses: julia-actions/cache@v1
+#       - uses: julia-actions/julia-buildpkg@v1
+#       - uses: julia-actions/julia-runtest@v1
+
+name: Julia Type Stability Tests
+
+on: [push, pull_request]
+
 jobs:
   test:
-    needs: [format_check]
-    name: Julia ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }} - ${{ github.event_name }}
-    runs-on: ${{ matrix.os }}
+    runs-on:  ${{ matrix.os }}
     strategy:
-      fail-fast: false
       matrix:
-        version:
-          - '1.8'
-        os:
-          - ubuntu-latest
-        arch:
-          - x64
+        julia-version: ${{ matrix.version }}
     steps:
-      - uses: actions/checkout@v2
-      - uses: julia-actions/setup-julia@v1
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Setup Julia
+        uses: julia-actions/setup-julia@v1
         with:
-          version: ${{ matrix.version }}
-          arch: ${{ matrix.arch }}
-      - uses: julia-actions/cache@v1
-      - uses: julia-actions/julia-buildpkg@v1
-      - uses: julia-actions/julia-runtest@v1
+          version: ${{ matrix.julia-version }}
+          # Add required packages for the tests
+          packages: |
+            Test
+            GTOC1
+      - name: Install Dependencies
+        run: julia --project=. -e "using Pkg; Pkg.instantiate()"
+      - name: Run Tests
+        run: julia --project=. runtests.jl
+
 
   # format_check:
   #   name: Check Formatting
