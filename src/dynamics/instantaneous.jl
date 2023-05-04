@@ -18,3 +18,13 @@ function LV_affect!(integrator)
 end
 
 LV_callback = DiscreteCallback(LV_condition, LV_affect!)
+
+## Planetary Flyby
+
+function update_velocity_flyby(v⃗₋, v⃗_planet, δ)
+    """
+    Velocities given in sun-centered inertial frame
+    δ - turn angle of hyperbolic orbit
+    """
+    
+end
