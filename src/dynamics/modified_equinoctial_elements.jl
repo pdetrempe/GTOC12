@@ -1,4 +1,4 @@
-export keplerian2MEE, MME2keplerian, MEE2Cartesian, EOM_MEE!
+export keplerian2MEE, MME2keplerian, MEE2Cartesian, Cartesian2MEE, EOM_MEE!
 
 ## Intermediate quantities used in MEE calculations
 get_q(;f, g, L) = 1 + f*cos(L) + g*sin(L)
@@ -45,23 +45,49 @@ function MEE2Cartesian(MEE; μ)
     Converts from modified equinoctial elements to Cartesian coordinates
     See https://spsweb.fltops.jpl.nasa.gov/portaldataops/mpg/MPG_Docs/Source%20Docs/EquinoctalElements-modified.pdf
     Equations 3a & 3b
+    https://github.com/jacobwilliams/Fortran-Astrodynamics-Toolkit/blob/master/src/modified_equinoctial_module.f90
     """    
     p, f, g, h, k, l = MEE
     
     α = get_α(h=h, k=k)
     s = get_s(h=h, k=k)
-    w = get_w(;f=g, g=g, L=l) 
+    w = get_w(;f=f, g=g, L=l) 
 
     r = p/w
     r⃗ = r/(s^2) * [cos(l) + α^2 * cos(l) + 2*h*k*sin(l)
                     sin(l) - α^2 * sin(l) + 2*h*k*cos(l)
                     2*(h*sin(l) - k*cos(l))]
 
-    v⃗ = 1/s^2 * sqrt(μ/p) *[-(sin(l) +α^2*sin(l) - 2*h*k*cos(l) + g -2*f*h*k + α^2*g)
-                            -(-cos(l) + α^2*sin(l) + 2*h*k*sin(l) - f +2*g*h*k + α^2*g)
+    v⃗ = 1/s^2 * √(μ/p) *[-(sin(l) +α^2*sin(l) - 2*h*k*cos(l) + g -2*f*h*k + α^2*g)
+                            -(-cos(l) + α^2*cos(l) + 2*h*k*sin(l) - f +2*g*h*k + α^2*f)
                             2*(h*cos(l) + k*sin(l) + f*h + g*k)]
 
     vcat(r⃗, v⃗)
+
+    # smp = √(μ/p)
+
+    # # Initialize intermediate values
+    # f̂ = zeros(typeof(k), 3)
+    # ĝ = zeros(typeof(k), 3)
+
+    # f̂[1] = 1 - k^2 + h^2
+    # f̂[2] = 2*k*h
+    # f̂[3] = -2k
+    # ĝ[1] = 2*k*h
+    # ĝ[2] = 1 + k^2 - h^2
+    # ĝ[3] = 2h
+
+    # f̂ /= s^2
+    # ĝ /= s^2
+
+    # x = r*cos(l)
+    # y = r*sin(l)
+    # ẋ = -smp * (g + sin(l))
+    # ẏ = smp * (f + cos(l))
+
+    # r⃗ = x*f̂ + y*ĝ
+    # v⃗ = ẋ*f̂ + ẏ*ĝ
+    # vcat(r⃗, v⃗)
 end
 
 function Cartesian2MEE(x⃗; μ)
@@ -72,18 +98,19 @@ function Cartesian2MEE(x⃗; μ)
     v⃗ = x⃗[4:6]
     h⃗ = cross(r⃗, v⃗)
 
-    r = norm(r)
-    v = norm(v)
-    h = norm(h)
+    r = norm(r⃗)
+    v = norm(v⃗)
+    h_mag = norm(h⃗)
 
     r̂ = r⃗/r
-    ĥ = h⃗/h
-    v̂ = (r*v⃗ - r⋅v)/h
+    ĥ = h⃗/h_mag
+    v̂ = (r*v⃗ - r⋅v*r̂)/h_mag
+    v̂ = v⃗/v
 
-    p = h*h/μ
+    p = h_mag*h_mag/μ
     k = ĥ[1]/(1 + ĥ[3])
     h = -ĥ[2]/(1 + ĥ[3])
-    s = √(1 + h^2 + k^2)
+    s = get_s(;h=h, k=k)
 
     e⃗ = cross(v⃗, h⃗)/μ - r̂
 
@@ -100,12 +127,12 @@ function Cartesian2MEE(x⃗; μ)
     ĝ[2] = 1 + k^2 - h^2
     ĝ[3] = 2h
 
-    f̂ = f̂ / s^2
-    ĝ = ĝ / s^2
+    f̂ /= s^2
+    ĝ /= s^2
  
     f = e⃗ ⋅ f̂
     g = e⃗ ⋅ ĝ
-    L = atan2( r̂[2] - v̂[1], r̂[1] + v̂[2] )
+    L = atan( r̂[2] - v̂[1], r̂[1] + v̂[2] )
 
  
     return [p;f;g;h;k;L]

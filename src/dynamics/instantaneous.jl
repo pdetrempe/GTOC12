@@ -1,6 +1,7 @@
+export LV_callback
 
 ## Launch vehicle impulse
-LV_condition(x, t, integrator) = t == 0
+LV_condition(x, t, integrator) = t == 1
 
 function LV_affect!(integrator)
     MEE = integrator.u        # State is Modified Equinoctal Elements
@@ -8,10 +9,11 @@ function LV_affect!(integrator)
     ΔV = integrator.p.ΔV_LV_inrt # Downside: DV has to be predefined
 
     x⃗₋ = MEE2Cartesian(MEE; μ=μ)
+    x⃗₊ = x⃗₋
+    v⃗₋ = x⃗₋[4:6]
+    x⃗₊[4:6] = v⃗₋ + ΔV 
 
-    x⃗₊ = x⃗₋ + ΔV 
-
-    integrator.u = Cartesian2MEE(x⃗₊; μ=μ) # State is Modified Equinoctal Elements
+    integrator.u[1:6] = Cartesian2MEE(x⃗₊; μ=μ) # State is Modified Equinoctal Elements
 
 end
 

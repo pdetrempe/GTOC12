@@ -106,7 +106,7 @@ struct GTOCProblemParams
 end
 
 # Initial DV kick
-DV₀ = [0; v∞_launch; 0]
+DV₀ = zeros(3); #[0; v∞_launch; 0]
 
 parameters = GTOCProblemParams( μ=μ_☉, c=c, T_max=T_max, ΔV_LV_inrt=DV₀)
 prob = ODEProblem(EOM_MEE!, vcat(MEE₀, m₀), tspan, parameters, callback=LV_callback)
