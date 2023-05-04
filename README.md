@@ -12,12 +12,14 @@ Repo for goofing around with solving the GTOC_1 problem in Julia
    1. Dynamics models
       - [x] Ephemeris
       2. Spacecraft
-         1. Sun gravity
-         2. Flybys
-            1. Minimum Perilune constraint
-         3. Actuator model
+         - [x] Sun gravity
+         - [ ] Flybys
+            - [ ] Minimum Perilune constraint
+         - [x] Launch vehicle
+         - [x] Actuator model
       - [x] Asteroid
          - [x] Closed-form Keplerian orbit
+         - [ ] Test Keplerian time/mean anomaly conversion
    2. Evaluate Objective Function
    3. Use the two above to recreate the winning solution
 2. Converge perturbed winning solution with shooting methods
