@@ -32,7 +32,7 @@ function MME2keplerian(;p, f, g, h, k, l)
     e = sqrt(f^2 + g^2)
     i = atan( 2*sqrt(h^2 + k^2), 1-h^2-k^2)
     Ω = atan( k,h )
-    ω = atan( gh-fk, fh+gk )
+    ω = atan( g*h-f*k, f*h+g*k )
     ν = l - (Ω + ω)
 
     
