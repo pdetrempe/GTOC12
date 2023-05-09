@@ -7,18 +7,18 @@ function download_all_kernels()
 
     ## Only call downloads if you don't already have the SPICE kernels
     # # Download kernels
-    download(LSK, "naif0012.tls")
-    download(PCK, "gm_de440.tpc")
-    download(SPK, "de440.bsp")
+    download(LSK, "/deps/naif0012.tls")
+    download(PCK, "/deps/gm_de440.tpc")
+    download(SPK, "/deps/de440.bsp")
 end
 
 function furnish_all_kernels()
     # Load leap seconds kernel
-    furnsh("naif0012.tls")
+    furnsh("deps/naif0012.tls")
 
     # Load a planetary ephemeris kernel
-    furnsh("de440.bsp")
+    furnsh("deps/de440.bsp")
 
     # Load a planetary properties kernel
-    furnsh("gm_de440.tpc")
+    furnsh("deps/gm_de440.tpc")
 end 
