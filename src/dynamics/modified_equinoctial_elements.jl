@@ -1,4 +1,4 @@
-export keplerian2MEE, MME2keplerian, MEE2Cartesian, Cartesian2MEE, EOM_MEE!
+export keplerian2MEE, MEE2keplerian, MEE2Cartesian, Cartesian2MEE, EOM_MEE!
 
 ## Intermediate quantities used in MEE calculations
 get_q(;f, g, L) = 1 + f*cos(L) + g*sin(L)
@@ -23,7 +23,7 @@ function keplerian2MEE(;a, e, i, Ω, ω, ν)
 
 end
 
-function MME2keplerian(;p, f, g, h, k, l)
+function MEE2keplerian(;p, f, g, h, k, l)
     """
     Converts from modified equinoctial elements to classical Keplerian 
     See https://spsweb.fltops.jpl.nasa.gov/portaldataops/mpg/MPG_Docs/Source%20Docs/EquinoctalElements-modified.pdf
