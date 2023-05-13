@@ -47,96 +47,78 @@ function MEE2Cartesian(MEE; μ)
     Equations 3a & 3b
     https://github.com/jacobwilliams/Fortran-Astrodynamics-Toolkit/blob/master/src/modified_equinoctial_module.f90
     """    
-    p, f, g, h, k, l = MEE
+    p, f, g, h, k, L = MEE
+
+    fhat= zeros(typeof(k), 3)
+    ghat = zeros(typeof(k), 3)
+
+    kk      = k*k
+    hh      = h*h
+    tkh     = 2*k*h
+    s2      = 1 + hh + kk
+    cL      = cos(L)
+    sL      = sin(L)
+    w       = 1 + f*cL + g*sL
+    r       = p/w
+    smp     = sqrt(μ/p)
+    fhat[1] = 1-kk+hh
+    fhat[3] = -2*k
+    ghat[1] = tkh
+    ghat[2] = 1+kk-hh
+    fhat[2] = tkh
+    ghat[3] = 2*h
+    fhat    = fhat/s2
+    ghat    = ghat/s2
+    x       = r*cL
+    y       = r*sL
+    xdot    = -smp * (g + sL)
+    ydot    =  smp * (f + cL)
+
+    r⃗ = x*fhat + y*ghat
+    v⃗ = xdot*fhat + ydot*ghat
     
-    α = get_α(h=h, k=k)
-    s = get_s(h=h, k=k)
-    w = get_w(;f=f, g=g, L=l) 
-
-    r = p/w
-    r⃗ = r/(s^2) * [cos(l) + α^2 * cos(l) + 2*h*k*sin(l)
-                    sin(l) - α^2 * sin(l) + 2*h*k*cos(l)
-                    2*(h*sin(l) - k*cos(l))]
-
-    v⃗ = 1/s^2 * √(μ/p) *[-(sin(l) +α^2*sin(l) - 2*h*k*cos(l) + g -2*f*h*k + α^2*g)
-                            -(-cos(l) + α^2*cos(l) + 2*h*k*sin(l) - f +2*g*h*k + α^2*f)
-                            2*(h*cos(l) + k*sin(l) + f*h + g*k)]
-
     vcat(r⃗, v⃗)
-
-    # smp = √(μ/p)
-
-    # # Initialize intermediate values
-    # f̂ = zeros(typeof(k), 3)
-    # ĝ = zeros(typeof(k), 3)
-
-    # f̂[1] = 1 - k^2 + h^2
-    # f̂[2] = 2*k*h
-    # f̂[3] = -2k
-    # ĝ[1] = 2*k*h
-    # ĝ[2] = 1 + k^2 - h^2
-    # ĝ[3] = 2h
-
-    # f̂ /= s^2
-    # ĝ /= s^2
-
-    # x = r*cos(l)
-    # y = r*sin(l)
-    # ẋ = -smp * (g + sin(l))
-    # ẏ = smp * (f + cos(l))
-
-    # r⃗ = x*f̂ + y*ĝ
-    # v⃗ = ẋ*f̂ + ẏ*ĝ
-    # vcat(r⃗, v⃗)
 end
 
 function Cartesian2MEE(x⃗; μ)
     """
     https://degenerateconic.com/modified-equinoctial-elements.html
     """
-    r⃗ = x⃗[1:3]
-    v⃗ = x⃗[4:6]
-    h⃗ = cross(r⃗, v⃗)
+    r = x⃗[1:3]
+    v = x⃗[4:6]
 
-    r = norm(r⃗)
-    v = norm(v⃗)
-    h_mag = norm(h⃗)
+    fhat= zeros(eltype(r), 3)
+    ghat = zeros(eltype(r), 3)
 
-    r̂ = r⃗/r
-    ĥ = h⃗/h_mag
-    v̂ = (r*v⃗ - r⋅v*r̂)/h_mag
-    v̂ = v⃗/v
+    rdv      = dot(r,v)
+    rmag     = norm(r)
+    rhat     = r/rmag
+    hvec     = cross(r,v)
+    hmag     = norm(hvec)
+    hhat     = hvec/hmag
+    vhat     = (rmag*v - rdv*rhat)/hmag
+    p        = hmag*hmag / μ
+    k        = hhat[1]/(1 + hhat[3])
+    h        = -hhat[2]/(1 + hhat[3])
+    kk       = k*k
+    hh       = h*h
+    s2       = 1+hh+kk
+    tkh      = 2*k*h
+    ecc      = cross(v,hvec)/μ - rhat
+    fhat[1]  = 1-kk+hh
+    fhat[2]  = tkh
+    fhat[3]  = -2*k
+    ghat[1]  = tkh
+    ghat[2]  = 1+kk-hh
+    ghat[3]  = 2*h
+    fhat     = fhat/s2
+    ghat     = ghat/s2
+    f        = dot(ecc,fhat)
+    g        = dot(ecc,ghat)
+    L        = mod2pi(atan(rhat[2]-vhat[1],rhat[1]+vhat[2]))
 
-    p = h_mag*h_mag/μ
-    k = ĥ[1]/(1 + ĥ[3])
-    h = -ĥ[2]/(1 + ĥ[3])
-    s = get_s(;h=h, k=k)
-
-    e⃗ = cross(v⃗, h⃗)/μ - r̂
-
-    # Initialize intermediate values
-    f̂ = zeros(typeof(k), 3)
-    ĝ = zeros(typeof(k), 3)
-
-
-    f̂[1] = 1 - k^2 + h^2
-    f̂[2] = 2*k*h
-    f̂[3] = -2k
-    
-    ĝ[1] = 2*k*h
-    ĝ[2] = 1 + k^2 - h^2
-    ĝ[3] = 2h
-
-    f̂ /= s^2
-    ĝ /= s^2
- 
-    f = e⃗ ⋅ f̂
-    g = e⃗ ⋅ ĝ
-    L = atan( r̂[2] - v̂[1], r̂[1] + v̂[2] )
-
- 
     return [p;f;g;h;k;L]
-    
+
 end
 
 
@@ -182,7 +164,7 @@ function get_control(MEE; params) # Get control thrust direction and magnitude [
 
     # Just roll with tangential firing to sanity check
     û_LVLH = R_inrt2lvlh*v⃗/norm(v⃗) # thrust along velocity vector (in LVLH frame)
-    δ = 1         # Full throttle
+    δ = 0         # Full throttle
     
     û_LVLH, δ 
 end
