@@ -8,6 +8,7 @@ module GTOC1
     @reexport import PlanetOrbits: m2au, _trueanom_from_eccanom
     @reexport using OrdinaryDiffEq
     @reexport using LinearAlgebra
+    @reexport using UnPack
 
     # Dynamics
     include("dynamics/keplerian_elements.jl")

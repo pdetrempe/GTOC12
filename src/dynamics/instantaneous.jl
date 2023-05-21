@@ -5,8 +5,7 @@ LV_condition(x, t, integrator) = t == 1
 
 function LV_affect!(integrator)
     MEE = integrator.u        # State is Modified Equinoctal Elements
-    μ = integrator.p.μ
-    ΔV = integrator.p.ΔV_LV_inrt # Downside: DV has to be predefined
+    @unpack μ, ΔV = integrator.p
 
     x⃗₋ = MEE2Cartesian(MEE; μ=μ)
     x⃗₊ = x⃗₋
