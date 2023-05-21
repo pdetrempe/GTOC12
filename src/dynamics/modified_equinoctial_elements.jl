@@ -49,11 +49,11 @@ function MEE2Cartesian(MEE; μ)
     """    
     p, f, g, h, k, L = MEE
 
-    fhat= zeros(typeof(k), 3)
-    ghat = zeros(typeof(k), 3)
+    fhat= zeros(eltype(k), 3)
+    ghat = zeros(eltype(k), 3)
 
-    kk      = k*k
-    hh      = h*h
+    kk      = k^2
+    hh      = h^2
     tkh     = 2*k*h
     s2      = 1 + hh + kk
     cL      = cos(L)
@@ -155,8 +155,8 @@ function B_equinoctial(MEE; μ)
 end
 
 
-function get_control(MEE; params) # Get control thrust direction and magnitude [0, 1]
-    μ = params.μ # problem parameters
+function tangential_firing(MEE; params) # Get control thrust direction and magnitude [0, 1]
+    @unpack μ = params # problem parameters
 
     x⃗ = MEE2Cartesian(MEE; μ)
     v⃗ = view(x⃗, 4:6)
@@ -164,7 +164,7 @@ function get_control(MEE; params) # Get control thrust direction and magnitude [
 
     # Just roll with tangential firing to sanity check
     û_LVLH = R_inrt2lvlh*v⃗/norm(v⃗) # thrust along velocity vector (in LVLH frame)
-    δ = 0         # Full throttle
+    δ = 1         # Full throttle
     
     û_LVLH, δ 
 end
@@ -174,16 +174,16 @@ function EOM_MEE!(ẋ, x, p, t)
     See: https://ai.jpl.nasa.gov/public/documents/papers/AAS-22-015-Paper.pdf
     Eq 1
     """
-    μ, c, T = p.μ, p.c, p.T_max # problem parameters
+    @unpack μ, c, T_max = p # problem parameters
     MEE = x[1:6]
     m   = x[7]
 
     A = A_equinoctial(MEE; μ=μ)
     B = B_equinoctial(MEE; μ=μ)
-    û, δ  = get_control(MEE; params=p) # Get control thrust direction and magnitude [0, 1]
+    û, δ  = tangential_firing(MEE; params=p) # Get control thrust direction and magnitude [0, 1]
 
-    MEE_dot = A + T*δ/m * B * û
-    ṁ = -δ*T/(c)
+    MEE_dot = A + T_max*δ/m * B * û
+    ṁ = -δ*T_max/(c)
 
     ẋ[:] = vcat( MEE_dot, ṁ )
 
