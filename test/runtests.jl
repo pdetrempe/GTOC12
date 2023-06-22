@@ -1,6 +1,6 @@
-using GTOC1
+using GTOC12
 using Test
 
-@testset "GTOC1.jl" begin
+@testset "GTOC12.jl" begin
     # Write your tests here.
 end

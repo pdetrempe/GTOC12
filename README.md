@@ -29,6 +29,7 @@ Repo for (trying to) solve the GTOC12 problem in Julia
 1. Execute feasible solution
    1. Dynamics models
       - [x] Ephemeris
+      - [ ] Good ol Kepler
       2. Spacecraft
          1. Sun gravity
          2. Flybys
@@ -38,6 +39,7 @@ Repo for (trying to) solve the GTOC12 problem in Julia
          - [x] Closed-form Keplerian orbit
    2. Evaluate Objective Function
    3. Use the two above to recreate the winning solution
-2. Converge perturbed winning solution with shooting methods
+2. Converge trajectory to an asteroid with shooting methods
 3. Add local optimizer to converged method
 4. Wrap shooting+local optimizer in global hyperparameter optimizer
+5. Start doing tree searches for global optima
