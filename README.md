@@ -1,8 +1,8 @@
-# GTOC_1
-Repo for goofing around with solving the GTOC_1 problem in Julia
+# GTOC12
+Repo for (trying to) solve the GTOC12 problem in Julia
 
-- [Competition](https://sophia.estec.esa.int/gtoc_portal/?page_id=13)
-- [Problem Description](https://sophia.estec.esa.int/gtoc_portal/wp-content/uploads/2012/11/ACT-MEM-MAD-GTOC1-The-Problem_V4.pdf)
+- [Competition](https://gtoc12.tsinghua.edu.cn/competition)
+- [Problem Description](https://gtoc12.tsinghua.edu.cn/competition/theProblem)
 
 # References
 - [NASA JPL NAIF](https://naif.jpl.nasa.gov/naif/)
