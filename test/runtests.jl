@@ -1,6 +1,5 @@
 using GTOC12
 using Test
-using SPICE
 furnish_all_kernels()
 
 # @testset "GTOC12.jl" begin  
