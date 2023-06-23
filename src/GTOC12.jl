@@ -1,6 +1,6 @@
 module GTOC12
-    # using SPICE
-    # using AstroTime
+    using SPICE
+    using AstroTime
     # using Plots
     # using PlanetOrbits
     # import PlanetOrbits: m2au, _trueanom_from_eccanom
@@ -18,6 +18,11 @@ module GTOC12
     # Utilities
     include("utils/time.jl")
     include("utils/SPICE_kernels.jl")
+    include("utils/asteroids.jl")
     include("utils/defaults.jl")
+
+    # File paths
+    const PROBLEM_DATA = joinpath(@__DIR__, "../problem")
+
 
 end
