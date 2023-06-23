@@ -54,7 +54,7 @@ jobs:
           # Add required packages for the tests
           packages: |
             Test
-            GTOC1
+            GTOC12
       - name: Install Dependencies
         run: julia --project=. -e "using Pkg; Pkg.instantiate()"
       - name: Run Tests
@@ -105,6 +105,6 @@ jobs:
   #     - name: Install Dependencies
   #       run: julia --project=. -e 'using Pkg; Pkg.add("Aqua")'
   #     - name: Check Quality
-  #       run: julia --project=. -e 'using Aqua;   Aqua.test_all(GTOC1)'
+  #       run: julia --project=. -e 'using Aqua;   Aqua.test_all(GTOC12)'
 
 

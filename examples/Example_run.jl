@@ -1,4 +1,4 @@
-using GTOC1
+using GTOC12
 using DifferentialEquations, Plots
 
 ## Furnish relevant SPICE kernels
