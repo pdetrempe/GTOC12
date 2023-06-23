@@ -1,3 +1,5 @@
+using SPICE
+
 export download_all_kernels, furnish_all_kernels
 
 function download_all_kernels()

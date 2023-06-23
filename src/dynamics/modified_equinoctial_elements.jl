@@ -1,4 +1,6 @@
-export keplerian2MEE, MEE2keplerian, MEE2Cartesian, Cartesian2MEE, EOM_MEE!
+using LinearAlgebra
+
+export keplerian2MEE, MME2keplerian, MEE2Cartesian, Cartesian2MEE, EOM_MEE!
 
 ## Intermediate quantities used in MEE calculations
 get_q(;f, g, L) = 1 + f*cos(L) + g*sin(L)
