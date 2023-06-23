@@ -1,5 +1,5 @@
-using GTOC1
-using DifferentialEquations
+using GTOC12
+using DifferentialEquations, Plots
 
 ## Furnish relevant SPICE kernels
 furnish_all_kernels()
@@ -78,7 +78,7 @@ plot!(asteroid_orbit, label="Asteroid")
 
 
 # Start spacecraft at Earth and propagate with the tangential guidance
-tspan = (0, 400*24*3600)
+tspan = (0, 365*24*3600)
 
 M_earth = PlanetOrbits.trueanom
 MEE₀ = keplerian2MEE(;
@@ -106,7 +106,7 @@ struct GTOCProblemParams
 end
 
 # Initial DV kick
-DV₀ = zeros(3); #[0; v∞_launch; 0]
+DV₀ = [0; v∞_launch; 0]
 
 parameters = GTOCProblemParams( μ=μ_☉, c=c, T_max=T_max, ΔV_LV_inrt=DV₀)
 prob = ODEProblem(EOM_MEE!, vcat(MEE₀, m₀), tspan, parameters, callback=LV_callback)
