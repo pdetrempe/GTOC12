@@ -1,5 +1,10 @@
 using GTOC1
-using DifferentialEquations, Plots
+using DifferentialEquations
+using SciMLSensitivity
+using Parameters
+using ComponentArrays
+using UnPack
+using ForwardDiff
 
 ## Furnish relevant SPICE kernels
 furnish_all_kernels()
@@ -93,28 +98,77 @@ i = earth_orbit.i,
 μ_☉ = bodvrd("Sun", "GM")[1] * (1000)^3 # Sun central body, km³/s² → m³/s²
 c = Isp * g₀ # exhaust velocity
 
-struct GTOCProblemParams
-    μ::Float64      # Central body (Sun) standard gravitational parameter [m³/s²]
-    c::Float64      # Thruster exhaust velocity [m/s]
-    T_max::Float64  # Max thruster force [N]
-    ΔV_LV_inrt::Vector{Float64} # Initial ΔV w.r.t. Earth from Launch Vehicle (not to exceed problem value) [m/s]
+# @with_kw struct GTOCProblemParams{T}
+#     μ::T      # Central body (Sun) standard gravitational parameter [m³/s²]
+#     c::T      # Thruster exhaust velocity [m/s]
+#     T_max::T  # Max thruster force [N]
+#     ΔV_LV_inrt::Vector{T} # Initial ΔV w.r.t. Earth from Launch Vehicle (not to exceed problem value) [m/s]
+#     r_target::Vector{T}
 
-    # kwarg constructor
-    function GTOCProblemParams(;μ, c, T_max, ΔV_LV_inrt)
-        new(μ, c, T_max, ΔV_LV_inrt)
-    end
-end
+# end
 
 # Initial DV kick
 DV₀ = [0; v∞_launch; 0]
 
-parameters = GTOCProblemParams( μ=μ_☉, c=c, T_max=T_max, ΔV_LV_inrt=DV₀)
-prob = ODEProblem(EOM_MEE!, vcat(MEE₀, m₀), tspan, parameters, callback=LV_callback)
-sol = solve(prob, tstops =1, alg_hints = [:stiff], reltol = 1e-10, abstol = 1e-6)
+# parameters = GTOCProblemParams( μ=μ_☉, c=c, T_max=T_max, ΔV_LV_inrt=DV₀)
+# prob = ODEProblem(EOM_MEE!, vcat(MEE₀, m₀), tspan, parameters, callback=LV_callback)
+# sol = solve(prob, tstops =1, alg_hints = [:stiff], reltol = 1e-10, abstol = 1e-6)
+r_target = MEE2Cartesian(MEE₀;μ=μ_☉)[1:3]
 
-MEE_out = [sol[1:6,i] for i = 1:lastindex(sol)]
+# parameters = GTOCProblemParams( μ=μ_☉, c=c, T_max=T_max, ΔV_LV_inrt=DV₀, r_target=r_target)
+# parameters_ballistic = GTOCProblemParams( μ=μ_☉, c=c, T_max=0.0, ΔV_LV_inrt=DV₀, r_target=r_target)
+parameters_ballistic = ComponentArray(μ=μ_☉, c=c, T_max=0.0, ΔV=DV₀, r_target=r_target)
 
+coast_prob = ODEProblem(EOM_MEE!, vcat(MEE₀, m₀), tspan, parameters_ballistic, callback=LV_callback)
+sol = solve(coast_prob, tstops =1, alg_hints = [:stiff], reltol = 1e-10, abstol = 1e-6, sensealg = InterpolatingAdjoint())
+
+## Iterate on initial kick to hit Earth with non-zero initial V_∞ (try out fixed-time single-shoot method)
+
+
+# ## Try direct adjoints
+# # ......damn, broadcasting got hands
+# #
+# # Follow the example here to use adjoint sensitivity to calculate Jacobians:
+# # https://docs.sciml.ai/SciMLSensitivity/stable/tutorials/adjoint_continuous_functional/
+# # Define a cost function
+# # (In this case, miss distance in Cartesian space)
+# function ∂Cost_∂u(out, u, p, t, i)
+#     @unpack μ, r_target  = p
+#     MEE_out = [sol[1:6,idx] for idx = 1:lastindex(sol)]
+
+#     r_prop = MEE2Cartesian(MEE_out; μ=μ)
+
+#     out = r_prop - r_des / norm(r_prop - r_des) # Jacobian of 2-norm of position difference
+# end
+# # dg(out, u, p, t, i) = (out .= 1.0 .- u)
+
+# res = adjoint_sensitivities(sol, Vern9(), t = sol.t[end], dgdu_discrete = ∂Cost_∂u, abstol = 1e-14,
+#                             reltol = 1e-14)
+
+## Instead, try create cost function and taking the gradient
+function cost(DV₀)
+    p = ComponentArray(μ=μ_☉, c=c, T_max=0.0, ΔV=DV₀, r_target=r_target)
+
+    tmp_prob = remake(coast_prob, u0 = convert.(eltype(DV₀), coast_prob.u0), p = p)
+    sol = solve(tmp_prob, tstops =1, alg_hints = [:stiff], reltol = 1e-10, abstol = 1e-6,
+                sensealg = SensitivityADPassThrough())
+    
+    MEE_out = [sol[1:6,idx] for idx = 1:lastindex(sol)]
+    for MEE in MEE_out[end]
+        print(MEE)
+        print('\n')
+    end
+
+    # This breaks when trying to pass in vector??
+    x_prop = MEE2Cartesian(MEE_out[end]; μ=μ_☉)
+    r_prop = x_prop[1:3]
+    cost = norm(r_target - r_prop)
+end
+res2 = ForwardDiff.gradient(cost, DV₀)
+
+## Plot final trajectory
 # Convert the Mean Equinoctial Elements to Cartesian
+MEE_out = [sol[1:6,i] for i = 1:lastindex(sol)][end]
 x_spacecraft = MEE2Cartesian.(MEE_out; μ=μ_☉)
 r_spacecraft = getindex.(x_spacecraft', 1:3)'.*m2au
 
