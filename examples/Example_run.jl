@@ -1,10 +1,5 @@
-using GTOC1
-using DifferentialEquations
-using SciMLSensitivity
-using Parameters
-using ComponentArrays
-using UnPack
-using ForwardDiff
+using GTOC12
+using DifferentialEquations, Plots
 
 ## Furnish relevant SPICE kernels
 furnish_all_kernels()
