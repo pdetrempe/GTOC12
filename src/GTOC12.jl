@@ -20,6 +20,8 @@ module GTOC12
     include("utils/SPICE_kernels.jl")
     include("utils/asteroids.jl")
     include("utils/defaults.jl")
+    include("utils/constants.jl")
+
 
     # File paths
     const PROBLEM_DATA = joinpath(@__DIR__, "../problem")

@@ -9,6 +9,10 @@ function download_all_kernels()
 
     ## Only call downloads if you don't already have the SPICE kernels
     # # Download kernels
+    if !isdir("deps")
+        mkdir("deps")
+    end
+    
     download(LSK, "./deps/naif0012.tls")
     download(PCK, "./deps/gm_de440.tpc")
     download(SPK, "./deps/de440.bsp")
