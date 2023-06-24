@@ -20,4 +20,13 @@ function get_asteroid_df()
     # Join the two data frames to have a party
     asteroid_df = innerjoin(asteroid_df, coeff_df, on=:ID)
 
+    # Convert units to meters/radians
+    asteroid_df.sma *= au2m
+    asteroid_df.inc *= π/180
+    asteroid_df.LAN *= π/180
+    asteroid_df.argperi *= π/180
+    asteroid_df.mean_anom *= π/180
+
+    return asteroid_df
+
 end
