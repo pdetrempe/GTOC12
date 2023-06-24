@@ -27,6 +27,12 @@ function get_asteroid_df()
     asteroid_df.argperi *= π/180
     asteroid_df.mean_anom *= π/180
 
+    # Add other time epochs that are useful
+    TT_start = "2035, Jan 1, 00:00:00.0000 (TDT)" # TT is TDT in SPICE
+    asteroid_df[!, :TT] .= TT_start
+    asteroid_df[!, :ET] .= str2et(TT_start)
+
+
     return asteroid_df
 
 end
