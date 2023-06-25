@@ -1,4 +1,4 @@
-using GTOC12
+using GTOC12, SPICE
 using Test
 furnish_all_kernels()
 

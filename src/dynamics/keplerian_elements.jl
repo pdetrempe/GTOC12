@@ -1,13 +1,6 @@
-using SPICE, AstroTime
+using SPICE
 
-export e⃗, ν, a, i, Ω, ω, mean_motion, RV2COE, COE2RV, body_osc_elt, M2EH, EH2ν, M2ν, hyp_anom, ecc_anom, mean_anom, propagate_keplerian
-
-# Get osculating elements for a planet
-function body_osc_elt(; planet::String, epoch::Epoch, frame=default_ref_frame, CB=default_CB_str)
-    ET = Epoch_to_SPICE_ET(epoch)
-    body_state, _ = spkgeo(planet, ET, frame, CB)
-    return oscltx(body_state, ET, bodvrd(CB, "GM")[1])
-end
+export e⃗, ν, a, i, Ω, ω, mean_motion, RV2COE, COE2RV, M2EH, EH2ν, M2ν, hyp_anom, ecc_anom, mean_anom, propagate_keplerian
 
 function M2EH(; M, ecc, tol=1e-6)
     if ecc < 1

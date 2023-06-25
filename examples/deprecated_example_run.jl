@@ -1,5 +1,5 @@
 using GTOC12
-using DifferentialEquations, Plots
+using DifferentialEquations, Plots, AstroTime
 
 ## Furnish relevant SPICE kernels
 furnish_all_kernels()
@@ -11,6 +11,24 @@ furnish_all_kernels()
 # ω  (argument  of  pericenter,  deg.): 264.78691
 # Ω  (Right  Ascension  of  the  Ascending Node, deg.): 128.34711
 # M (mean anomaly at epoch 53600 MJD, deg.): 320.47955
+
+## Launch vehicle impulse
+LV_condition(x, t, integrator) = t == 1
+
+function LV_affect!(integrator)
+    MEE = integrator.u        # State is Modified Equinoctal Elements
+    @unpack μ, ΔV = integrator.p
+
+    x⃗₋ = MEE2Cartesian(MEE; μ=μ)
+    x⃗₊ = x⃗₋
+    v⃗₋ = x⃗₋[4:6]
+    x⃗₊[4:6] = v⃗₋ + ΔV 
+
+    integrator.u[1:6] = Cartesian2MEE(x⃗₊; μ=μ) # State is Modified Equinoctal Elements
+
+end
+
+LV_callback = DiscreteCallback(LV_condition, LV_affect!)
 
 asteroid_orbit = orbit(
     a=2.5897261,          # semi major axis (AU)
@@ -50,7 +68,6 @@ v∞_launch = 2.5 * 1000; # m/s, launch velocity relative to Earth
 ## Get Earth and asteroid positions at epoch
 # Convert the calendar date to ephemeris seconds past J2000
 # ET_J2000 = TDBEpoch(0days, origin=:j2000)
-# ETs = value.(seconds.(AstroTime.j2000.(launch_dates_ET))) .- value(seconds(AstroTime.j2000(ET_J2000)))
 ET_0 = launch_dates_ET[1]
 
 ## Plot Earth and asteroid positions at epoch
