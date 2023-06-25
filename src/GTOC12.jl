@@ -7,6 +7,10 @@ module GTOC12
     # using OrdinaryDiffEq
     # using LinearAlgebra
 
+
+    # File paths
+    const PROBLEM_DATA = joinpath(@__DIR__, "../problem")
+
     # Dynamics
     include("dynamics/keplerian_elements.jl")
     include("dynamics/modified_equinoctial_elements.jl")
@@ -16,15 +20,13 @@ module GTOC12
 
 
     # Utilities
-    include("utils/time.jl")
     include("utils/SPICE_kernels.jl")
     include("utils/asteroids.jl")
-    include("utils/defaults.jl")
     include("utils/constants.jl")
+    include("utils/time.jl")
+    include("utils/defaults.jl")
 
 
-    # File paths
-    const PROBLEM_DATA = joinpath(@__DIR__, "../problem")
 
 
 end
