@@ -9,12 +9,22 @@ function download_all_kernels()
 
     ## Only call downloads if you don't already have the SPICE kernels
     # # Download kernels
+    if !isdir("deps")
+        mkdir("deps")
+    end
+    
     download(LSK, "./deps/naif0012.tls")
     download(PCK, "./deps/gm_de440.tpc")
     download(SPK, "./deps/de440.bsp")
 end
 
 function furnish_all_kernels()
+    # Check if kernels exist first and download them if need be
+    if !isdir("deps") || !isfile("./deps/naif0012.tls")
+        print("Downloading necessary SPICE kernels")
+        download_all_kernels()
+    end
+
     # Load leap seconds kernel
     furnsh("./deps/naif0012.tls")
 
@@ -24,3 +34,15 @@ function furnish_all_kernels()
     # Load a planetary properties kernel
     furnsh("./deps/gm_de440.tpc")
 end 
+
+# Wrap SPICE calls
+function get_planet_state(planet, ET)
+    # Use SPICE to get position
+    ref = "ECLIPJ2000"
+    abcorr = "NONE"
+    obs = GTOC12.default_CB_str
+
+    # TODO: Use SPICE Int IDs instead of string
+    r_planet = spkezr(uppercase(planet), ET, ref, abcorr, uppercase(obs))[1]
+    r_planet *= 1000 # km → m
+end

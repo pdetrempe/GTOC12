@@ -1,6 +1,5 @@
-using GTOC12
+using GTOC12, SPICE
 using Test
-using SPICE
 furnish_all_kernels()
 
 # @testset "GTOC12.jl" begin  
@@ -54,7 +53,7 @@ furnish_all_kernels()
         epochs = [86400, 86400 * (365 * 21 + 119)]
         CB = GTOC12.default_CB_str
         for bdy in bodies, et in epochs
-            x⃗_test = spkgeo(bodn2c(bdy), et, GTOC1.default_ref_frame, bodn2c(CB))[1]
+            x⃗_test = spkgeo(bodn2c(bdy), et, GTOC12.default_ref_frame, bodn2c(CB))[1]
             elts = GTOC12.RV2COE(x⃗=x⃗_test, μ_CB_or_CB_name=CB)
             rp = elts[1] * (1 - elts[2])
             M0 = GTOC12.mean_anom(x⃗=x⃗_test, μ_CB_or_CB_name=CB)
@@ -79,4 +78,21 @@ furnish_all_kernels()
             @test ta ≈ tb
         end
     end
+# @testset "GTOC1.jl" begin  
+#     # define the test set
+#     @testset "Type stability tests" begin
+#         # test functions for type stability using @typewarn
+#         @testset "Functions" for (name, method) in collect(methods(MyModule))
+#             @testset "Function $name" begin
+#                 @typewarn typeof(method(rand(eltype(method.parameters)))) 
+#             end
+#         end
+        
+#         # # test types for type stability
+#         # @testset "Types" begin
+#         #     @test isconcretetype(MyModule.MyType)
+#         #     @test isbits(MyModule.MyType)
+#         # end
+#     end
+
 end
