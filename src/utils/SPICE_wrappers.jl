@@ -34,3 +34,15 @@ function furnish_all_kernels()
     # Load a planetary properties kernel
     furnsh("./deps/gm_de440.tpc")
 end 
+
+# Wrap SPICE calls
+function get_planet_state(planet, ET)
+    # Use SPICE to get position
+    ref = "ECLIPJ2000"
+    abcorr = "NONE"
+    obs = GTOC12.default_CB_str
+
+    # TODO: Use SPICE Int IDs instead of string
+    r_planet = spkezr(uppercase(planet), ET, ref, abcorr, uppercase(obs))[1]
+    r_planet *= 1000 # km → m
+end

@@ -1,6 +1,6 @@
 using CSV, DataFrames, GTOC12
 
-export get_asteroid_df
+export get_asteroid_df, get_asteroid_state
 
 function get_asteroid_df()
     # furnish SPICE kernels
@@ -39,4 +39,27 @@ function get_asteroid_df()
 
     return asteroid_df
 
+end
+
+# Query asteroid state at a given time
+function get_asteroid_state(asteroid, ET)
+    # Change phasing to be time-based
+    n = mean_motion(;a=asteroid.sma, μ=μ_☉) # mean motion
+
+    # Propagate mean anomaly to ET
+    M = asteroid.mean_anom + n * (ET - GTOC12.ET₀)
+
+    # Calculate true anomaly
+    E = M2EH(; M=M, ecc=asteroid.ecc)
+    ν = EH2ν(; E_or_H=E, ecc=asteroid.ecc)
+
+    # Get asteroid position at all true anomalies
+    x_asteroid = COE2RV(; COE=
+        [asteroid.sma,
+            asteroid.ecc,
+            asteroid.inc,
+            asteroid.LAN,
+            asteroid.argperi,
+            ν],
+        μ_CB_or_CB_name=μ_☉)
 end

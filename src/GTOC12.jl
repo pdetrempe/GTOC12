@@ -1,9 +1,4 @@
 module GTOC12
-    using SPICE
-    using AstroTime
-    # using Plots
-    # using PlanetOrbits
-    # import PlanetOrbits: m2au, _trueanom_from_eccanom
     # using OrdinaryDiffEq
     # using LinearAlgebra
 
@@ -20,11 +15,16 @@ module GTOC12
 
 
     # Utilities
-    include("utils/SPICE_kernels.jl")
+    include("utils/SPICE_wrappers.jl")
     include("utils/asteroids.jl")
     include("utils/constants.jl")
     include("utils/time.jl")
     include("utils/defaults.jl")
+    include("utils/helper_functions.jl")
+
+    # Plotting
+    include("plotting/plotting.jl")
+
 
 
 
