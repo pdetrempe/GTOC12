@@ -1,6 +1,6 @@
 using SPICE, AstroTime
 
-export e⃗, ν, a, i, Ω, ω, mean_motion, RV2COE, COE2RV, body_osc_elt, M2EH, EH2ν, M2ν, hyp_anom, ecc_anom, mean_anom #, get_planet_orbit
+export e⃗, ν, a, i, Ω, ω, mean_motion, RV2COE, COE2RV, body_osc_elt, M2EH, EH2ν, M2ν, hyp_anom, ecc_anom, mean_anom, propagate_keplerian
 
 # Get osculating elements for a planet
 function body_osc_elt(; planet::String, epoch::Epoch, frame=default_ref_frame, CB=default_CB_str)
@@ -143,7 +143,8 @@ function COE2RV(; COE, μ_CB_or_CB_name) # Vallado 4e Algorithm 10 (p118)
         sΩ*cω+cΩ*sω*ci -sΩ*sω+cΩ*cω*ci -cΩ*si
         sω*si cω*si ci
     ]
-    x⃗ = Vector{Float64}(undef, 6)
+
+    x⃗ = similar(COE)
     x⃗[1:3] = IJK_PQW * r̃
     x⃗[4:6] = IJK_PQW * ṽ
     return x⃗
@@ -188,4 +189,22 @@ function mean_anom(; x⃗, μ_CB_or_CB_name)
         H = 2 * atanh(sqrt((e - 1) / (e + 1)) * tan(trueanom / 2)) # Vallado 4e Eq. 2-35 (p56)
         return e * sinh(H) - H # Vallado 4e Eq. 2-38 (p57)
     end
+end
+
+# Propagate using Keplerian (2-body) dynamics
+function propagate_keplerian(x₀, t; μ=GTOC12.μ_☉)
+    #    a. convert to COE/MEE
+    oe₀ = RV2COE(x⃗=x₀, μ_CB_or_CB_name=μ)
+    M₀ = mean_anom(x⃗=x₀, μ_CB_or_CB_name=μ)
+    n = mean_motion(a=oe₀[1], μ=μ_☉) # mean motion
+
+    #    b. propagate forward in time
+    Mₜ = M₀ + n * t
+    νₜ = M2ν( M=Mₜ, ecc=oe₀[2]; tol=1e-6)
+
+    #    c. convert back to position
+    oeₜ = copy(oe₀)
+    oeₜ[6] = νₜ
+    xₜ = COE2RV( COE=oeₜ, μ_CB_or_CB_name=μ) # Vallado 4e Algorithm 10 (p118)
+
 end
