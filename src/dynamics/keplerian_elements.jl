@@ -1,6 +1,6 @@
 using SPICE, AstroTime
 
-export e⃗, ν, a, i, Ω, ω, RV2COE, COE2RV, body_osc_elt, M2EH, EH2ν, hyp_anom, ecc_anom, mean_anom #, get_planet_orbit
+export e⃗, ν, a, i, Ω, ω, mean_motion, RV2COE, COE2RV, body_osc_elt, M2EH, EH2ν, M2ν, hyp_anom, ecc_anom, mean_anom #, get_planet_orbit
 
 # Get osculating elements for a planet
 function body_osc_elt(; planet::String, epoch::Epoch, frame=default_ref_frame, CB=default_CB_str)
@@ -9,7 +9,7 @@ function body_osc_elt(; planet::String, epoch::Epoch, frame=default_ref_frame, C
     return oscltx(body_state, ET, bodvrd(CB, "GM")[1])
 end
 
-function M2EH(; M, ecc, tol=eps(Float64))
+function M2EH(; M, ecc, tol=1e-6)
     if ecc < 1
         EH = M + sign(π - mod(M, 2π)) * ecc
         EH₊ = EH # allocate outside loop scope
@@ -45,6 +45,11 @@ function EH2ν(; E_or_H, ecc)
     else
         return 2 * atan(sqrt((1 + ecc) / (1 - ecc)) * tan(E_or_H / 2)) # Vallado 4e Eq. 2-13 (p48)
     end
+end
+
+function M2ν(; M, ecc, tol=1e-6)
+    E_or_H = M2EH(; M=M, ecc=ecc, tol=tol)
+    ν = EH2ν(; E_or_H=E_or_H, ecc=ecc)
 end
 
 function e⃗(; x⃗, μ_CB_or_CB_name)
@@ -162,6 +167,11 @@ function ecc_anom(; x⃗, μ_CB_or_CB_name)
     ν̃ = acos((ecc ⋅ r⃗) / (e * norm(r⃗))) # Vallado 4e Eq. 2-86 (p100)
     trueanom = r⃗ ⋅ v⃗ > 0 ? ν̃ : 2π - ν̃ # Correct for halfspace
     return 2 * atan(sqrt((1 - e) / (1 + e)) * tan(trueanom / 2)) # Vallado 4e Eq. 2-14 (p48)
+end
+
+# Mean motion
+function mean_motion(;a, μ)
+    n = √(μ/a^3) 
 end
 
 function mean_anom(; x⃗, μ_CB_or_CB_name)
