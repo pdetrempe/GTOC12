@@ -19,6 +19,12 @@ function download_all_kernels()
 end
 
 function furnish_all_kernels()
+    # Check if kernels exist first and download them if need be
+    if !isdir(deps) || !isfile("./deps/naif0012.tls")
+        print("Downloading necessary SPICE kernels")
+        download_all_kernels()
+    end
+
     # Load leap seconds kernel
     furnsh("./deps/naif0012.tls")
 
