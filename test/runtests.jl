@@ -53,7 +53,7 @@ furnish_all_kernels()
         epochs = [86400, 86400 * (365 * 21 + 119)]
         CB = GTOC12.default_CB_str
         for bdy in bodies, et in epochs
-            x⃗_test = spkgeo(bodn2c(bdy), et, GTOC1.default_ref_frame, bodn2c(CB))[1]
+            x⃗_test = spkgeo(bodn2c(bdy), et, GTOC12.default_ref_frame, bodn2c(CB))[1]
             elts = GTOC12.RV2COE(x⃗=x⃗_test, μ_CB_or_CB_name=CB)
             rp = elts[1] * (1 - elts[2])
             M0 = GTOC12.mean_anom(x⃗=x⃗_test, μ_CB_or_CB_name=CB)
