@@ -1,6 +1,6 @@
 using SPICE
 
-export download_all_kernels, furnish_all_kernels
+export download_all_kernels, furnish_all_kernels, get_planet_state
 
 function download_all_kernels()
     LSK = "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/lsk/naif0012.tls"

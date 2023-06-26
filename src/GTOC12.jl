@@ -20,6 +20,9 @@ module GTOC12
     include("utils/defaults.jl")
     include("utils/helper_functions.jl")
 
+    # Targeters and Optimizers
+    include("targeting/targeting.jl")
+
     # Plotting
     include("plotting/plotting.jl")
 

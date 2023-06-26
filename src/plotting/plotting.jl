@@ -25,7 +25,7 @@ function plot_asteroid_from_df_row(asteroid; ET_in=[GTOC12.ET₀, GTOC12.ET₀ +
 
 end
 
-# Plot planet
+# Plot planetGTOC12
 function plot_planet!(; planet="EARTH", ET_in=[GTOC12.ET₀, GTOC12.ET₀ + 365 * 24 * 3600], kwargs...)
 
     # Accept start/end time or vector of times
