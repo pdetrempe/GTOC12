@@ -1,6 +1,5 @@
 module GTOC12
-    # using OrdinaryDiffEq
-    # using LinearAlgebra
+    using DataFrames
 
 
     # File paths
@@ -15,8 +14,8 @@ module GTOC12
 
     # Utilities
     include("utils/SPICE_wrappers.jl")
-    include("utils/asteroids.jl")
     include("utils/constants.jl")
+    include("utils/asteroids.jl")
     include("utils/defaults.jl")
     include("utils/helper_functions.jl")
 
@@ -25,6 +24,7 @@ module GTOC12
 
     # Plotting
     include("plotting/plotting.jl")
+
 
 
 

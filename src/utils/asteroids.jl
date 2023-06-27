@@ -1,9 +1,9 @@
-using CSV, DataFrames, GTOC12
+using CSV, DataFrames, SPICE, GTOC12
 
-export get_asteroid_df, get_asteroid_state
+export get_asteroid_df, get_asteroid_state, asteroid_df
 
 function get_asteroid_df()
-    # furnish SPICE kernels
+    # furnish SPICE kernels if they haven't been loaded yet
     furnish_all_kernels()
 
     # asteroid data path
@@ -25,7 +25,7 @@ function get_asteroid_df()
     asteroid_df = innerjoin(asteroid_df, coeff_df, on=:ID)
 
     # Convert units to meters/radians
-    asteroid_df.sma *= au2m
+    asteroid_df.sma *= GTOC12.au2m
     asteroid_df.inc *= π/180
     asteroid_df.LAN *= π/180
     asteroid_df.argperi *= π/180
@@ -63,3 +63,9 @@ function get_asteroid_state(asteroid, ET)
             ν],
         μ_CB_or_CB_name=μ_☉)
 end
+
+# Only load/manipulate dataframe once
+const asteroid_df = get_asteroid_df()
+
+# Problem start time
+const ET₀ = asteroid_df[1, :ET]
