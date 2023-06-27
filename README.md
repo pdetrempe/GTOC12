@@ -14,7 +14,9 @@ Repo for (trying to) solve the GTOC12 problem in Julia
 - [JuliaMono font](https://juliamono.netlify.app/)
 ## Trajectory Optimization
 - [ESA PyKEP](https://github.com/esa/pykep)
+- [shooting methods reference](https://engineering.purdue.edu/people/kathleen.howell.1/Publications/Dissertations/2013_Pavlak.pdf)
 - [Low-Thrust Trajectory Optimization for the Solar System Pony Express](https://ai.jpl.nasa.gov/public/documents/papers/AAS-22-015-Paper.pdf)
+- [Multi-Gravity Assist Low-Thrust Trajectory Optimization](https://www.researchgate.net/profile/Martin-Ozimek/publication/330533150_The_Low-thrust_Interplanetary_EXplorer_A_Medium-Fidelity_Algorithm_for_Multi-Gravity_Assist_Low-Thrust_Trajectory_Optimization/links/5c46900e92851c22a3870254/The-Low-thrust-Interplanetary-EXplorer-A-Medium-Fidelity-Algorithm-for-Multi-Gravity-Assist-Low-Thrust-Trajectory-Optimization.pdf)
 ## Modified Equinoctial Orbit Elements
 - [Modified Equinoctial Elements](https://spsweb.fltops.jpl.nasa.gov/portaldataops/mpg/MPG_Docs/Source%20Docs/EquinoctalElements-modified.pdf)
 - [Fortran Astrodynamics Toolkit, Modified Equinoctial Module](https://github.com/jacobwilliams/Fortran-Astrodynamics-Toolkit/blob/master/src/modified_equinoctial_module.f90)

@@ -188,16 +188,21 @@ end
 function propagate_keplerian(x₀, t; μ=GTOC12.μ_☉)
     #    a. convert to COE/MEE
     oe₀ = RV2COE(x⃗=x₀, μ_CB_or_CB_name=μ)
+    ν₀ = oe₀[6]
+    MEE₀ = Cartesian2MEE(x₀)
     M₀ = mean_anom(x⃗=x₀, μ_CB_or_CB_name=μ)
-    n = mean_motion(a=oe₀[1], μ=μ_☉) # mean motion
+    n = mean_motion(a=oe₀[1], μ=μ) # mean motion
 
     #    b. propagate forward in time
     Mₜ = M₀ + n * t
     νₜ = M2ν( M=Mₜ, ecc=oe₀[2]; tol=1e-6)
 
     #    c. convert back to position
-    oeₜ = copy(oe₀)
-    oeₜ[6] = νₜ
-    xₜ = COE2RV( COE=oeₜ, μ_CB_or_CB_name=μ) # Vallado 4e Algorithm 10 (p118)
-
+    # oeₜ = copy(oe₀)
+    # oeₜ[6] = νₜ
+    # xₜ = COE2RV( COE=oeₜ, μ_CB_or_CB_name=μ) # Vallado 4e Algorithm 10 (p118)
+    Δν = νₜ - ν₀
+    MEEₜ = copy(MEE₀)
+    MEEₜ[end] += Δν
+    xₜ = MEE2Cartesian(MEEₜ)    
 end
