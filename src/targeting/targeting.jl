@@ -22,10 +22,11 @@ end
 function fixed_time_single_shoot( x₀, t_shoot, r_target; MAX_ITER = 50, print_iter=false)
 
     num_iter = 0
+    x₀⁺ = copy(x₀)
     drₜ = x₀[1:3] # Initialize miss distance
         while num_iter < MAX_ITER && norm(drₜ) > GTOC12.POS_ABS_TOL
             # Form vector used by ForwardDiff problem
-            x_aug = vcat(x₀, t_shoot, r_target)
+            x_aug = vcat(x₀⁺, t_shoot, r_target)
 
             # Calculate miss distance from current propagation
             drₜ = calculate_miss_distance(x_aug)
@@ -34,11 +35,11 @@ function fixed_time_single_shoot( x₀, t_shoot, r_target; MAX_ITER = 50, print_
             end
 
             # Calculate sensitivity of solution to all parameters
-            dr_dx_aug = ForwardDiff.jacobian(calculate_miss_distance, x_aug)
+            drₜ_dx_aug = ForwardDiff.jacobian(calculate_miss_distance, x_aug)
 
             # Get partials w.r.t. design variables
             # (In this case, initial velocity and time of flight)
-            ∂rₜ_∂v₀ = dr_dx_aug[:, 4:6] # Variation of final position w.r.t. initial velocity
+            ∂rₜ_∂v₀ = drₜ_dx_aug[:, 4:6] # Variation of final position w.r.t. initial velocity
             # ∂rₜ_∂TOF = dr_dx_aug[:, 7]  # Variation of final position w.r.t. time-of-flight
 
             # ^^^TODO: handle indices more intelligently for packing/unpacking
@@ -49,7 +50,7 @@ function fixed_time_single_shoot( x₀, t_shoot, r_target; MAX_ITER = 50, print_
             dv₀ = -∂rₜ_∂v₀\drₜ
             # dTOF = -∂rₜ_∂TOF\drₜ
 
-            x₀[4:6] += dv₀
+            x₀⁺[4:6] += dv₀
 
             # Variable time stuff isn't working interestingly
             # global t_shoot += dTOF
@@ -57,5 +58,6 @@ function fixed_time_single_shoot( x₀, t_shoot, r_target; MAX_ITER = 50, print_
             num_iter += 1
 
         end
-    return x₀
+    xₜ = propagate_keplerian(x₀⁺, t_shoot)
+    return x₀⁺, xₜ
 end
