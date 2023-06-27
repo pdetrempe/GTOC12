@@ -52,5 +52,7 @@ plot_planet!(planet="EARTH"; ET_in=ETs, label="Earth", color=colormap("Blues"))
 plot_coast!(x₀⁺, t_transfer; label="Coast 1", color=colormap("Greens"))
 plot_coast!(x₀⁺_2, t_transfer2; label="Coast 2", color=colormap("Greens"))
 
+# TODO: Optimize the above for DV
+
 # Holy shit, this is actually a feasible solution we can use for scoring
 # Let's try to write it to a scorable file
