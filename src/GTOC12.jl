@@ -8,6 +8,7 @@ module GTOC12
     # Dynamics
     include("dynamics/keplerian_elements.jl")
     include("dynamics/modified_equinoctial_elements.jl")
+    include("dynamics/universal_variable.jl")
     include("dynamics/frame_conversions.jl")
     include("dynamics/naive_flyby.jl")
 

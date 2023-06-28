@@ -32,7 +32,7 @@ r_target = view(x_target, 1:3)
 # TODO: add graceful error handling
 # TODO: add a Lambert targetter for doing initial guess
 # TODO: do a time sweep of Lambert trajectories to minimize DV
-x₀⁺, xₜ = fixed_time_single_shoot( x₀, t_transfer, r_target; print_iter=false)
+x₀⁺, xₜ = fixed_time_single_shoot( x₀, t_transfer, r_target; print_iter=true)
 ΔV_departure_1 = ( x₀⁺ - x₀ )[4:6]
 ΔV_arrival_1 = (xₜ - x_target )[4:6]
 
@@ -121,7 +121,7 @@ end
 function RD.discrete_dynamics(model::ImpulsiveSpacecraft, x, u, t, dt)
     ΔV = u
     x₀⁺ = x + [0;0;0; ΔV[:] ]
-    xₜ =  propagate_keplerian(x₀⁺, dt)
+    xₜ =  propagate_universal(x₀⁺, dt)
     SVector{length(xₜ)}(xₜ)
 end
 
@@ -135,7 +135,7 @@ target_asteroid = Asteroid(ID_min)
 model = ImpulsiveSpacecraft(GTOC12.ET₀, target_asteroid)
 n,m = RD.dims(model)
 tf = t_transfer  # final time (sec)
-N = 2            # number of knot points, 2 for simple start/end impulses
+N = 3           # number of knot points, 2 for simple start/end impulses
 dt = tf / (N-1)  # time step (sec)
 # @test (n,m) == (6,3)
 
@@ -144,7 +144,8 @@ dt = tf / (N-1)  # time step (sec)
 x0 = SVector{length(x₀)}(x₀)# initial state
 xf = SVector{length(x_target)}(x_target) # final state
 
-Q = Diagonal(@SVector zeros(n))
+# TODO: Convert costs to just Σ(ΔV)
+Q = Diagonal(@SVector ones(n))
 R = Diagonal(@SVector ones(m))
 Qf = Diagonal( @SVector ones(n))
 obj = LQRObjective(Q, R, Qf, xf, N)
@@ -156,32 +157,66 @@ bnd = BoundConstraint(n,m, u_min=-6000/sqrt(m)*ones(m), u_max=6000/sqrt(m)*ones(
 add_constraint!(conSet, bnd, 1:N-1)
 
 # Initial guess
+# u0 = SVector{length(ΔV_departure_1)}(ΔV_departure_1) # Try warm-starting with shooting method solution?
 u0 = @SVector zeros(m)
 
 # Set up problem
+
+# TODO: Change problem formulation to constrain final position and add final velocity difference to COST
+
 prob = Problem(model, obj, x0, tf, xf=xf, constraints=conSet)
 initial_controls!(prob, u0)
 rollout!(prob);
+
+
+# Uh, solve the problem?
+using Altro
+opts = SolverOptions(;
+    constraint_tolerance = 1.0,
+    cost_tolerance = 1.0,
+    cost_tolerance_intermediate = 1.0,
+    max_cost_value = 1.0e30,
+    max_state_value = 1.0e30,
+    max_control_value = 6.0e30
+    # Optimality Tolerances
+    
+
+    # iLQR
+    # expected_decrease_tolerance = 1e-10
+    # iterations_inner = 300
+    # dJ_counter_limit = 10
+    # square_root = false
+    # line_search_lower_bound = 1e-8
+    # line_search_upper_bound = 10.0
+    # line_search_decrease_factor = 0.5
+    # iterations_linesearch = 20
+
+    # static_bp = true
+	# save_S = false
+    # closed_loop_initial_rollout = false
+)
+
+solver = ALTROSolver(prob, opts);
+solve!(solver)
+println("Cost: ", cost(solver))
+# println("Constraint violation: ", max_violation(solver))
+println("Iterations: ", iterations(solver))
 
 # Extract states and controls
 X = states(prob)
 U = controls(prob)
 t = gettimes(prob)
 
-Xrollout = [copy(x0) for k = 1:N]
-Urollout = [copy(u0) for k = 1:N]
-for k = 1:N-1
-    Xrollout[k+1] = RD.discrete_dynamics(
-        get_model(prob, k), Xrollout[k], Urollout[k], dt*(k-1), dt
-    )
-end
-# @test Xrollout ≈ X 
+# Xrollout = [copy(x0) for k = 1:N]
+# Urollout = [copy(u0) for k = 1:N]
+# for k = 1:N-1
+#     Xrollout[k+1] = RD.discrete_dynamics(
+#         get_model(prob, k), Xrollout[k], Urollout[k], dt*(k-1), dt
+#     )
+# end
+# # @test Xrollout ≈ X 
 
 
-# Convert to matrices
-Xmat = hcat(Vector.(X)...)
-Umat = hcat(Vector.(U)...)
-
-# # Extract out individual states and controls
-# x1 = states(prob, 2)
-# u1 = controls(prob, 1)
+# # Convert to matrices
+# Xmat = hcat(Vector.(X)...)
+# Umat = hcat(Vector.(U)...)
