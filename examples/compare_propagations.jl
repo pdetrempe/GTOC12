@@ -24,11 +24,13 @@ t_transfer = 1/2 * 365 * 24 * 3600
 
 # Transfer via Keplerian propagation
 x_transfer_Kepler = propagate_keplerian(x₀, t_transfer)
-print(x₀)
+# println(x₀)
 
 # Transfer via universal propagation
 x_transfer_universal= propagate_universal(x₀, t_transfer)
-print(x₀)
+# println(x₀)
+
+println(x_transfer_Kepler - x_transfer_universal)
 
 
 # Plot Earth/asteroid/spacecraft
