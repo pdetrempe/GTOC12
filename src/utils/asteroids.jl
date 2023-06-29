@@ -7,8 +7,8 @@ function get_asteroid_df()
     furnish_all_kernels()
 
     # asteroid data path
-    asteroid_data_file = joinpath( GTOC12.PROBLEM_DATA, "GTOC12_Asteroids_Data.txt")
-    coeff_file = joinpath( GTOC12.PROBLEM_DATA, "bonus_coefficients_202306019.txt")
+    asteroid_data_file = joinpath( PROBLEM_DATA, "GTOC12_Asteroids_Data.txt")
+    coeff_file = joinpath( PROBLEM_DATA, "bonus_coefficients_202306019.txt")
 
     # Asteroid data
     asteroid_df = DataFrame(CSV.File(asteroid_data_file; header=1, delim=' ', ignorerepeated=true))
