@@ -50,6 +50,7 @@ t_coast = 24*3600
 # ΔV_departure_2 = ( x₀⁺_2 - x₀ )[4:6]
 # ΔV_arrival_2 = (xₜ - x_target )[4:6]
 
+# TODO: URGENT: Optimize/benchmark new univerasl variable propagation
 
 
 # Plot Earth/asteroid/spacecraft
@@ -108,20 +109,21 @@ end
 @autodiff struct ImpulsiveSpacecraft <: TO.DiscreteDynamics
     ET_launch::Float64
     target_asteroid::Asteroid
+    μ::Float64
 end
 
-function ImpulsiveSpacecraft(;ET_launch, target_asteroid)
-    return ImpulsiveSpacecraft(ET_launch, target_asteroid)
+function ImpulsiveSpacecraft(;ET_launch::Float64, target_asteroid::Asteroid, μ::Float64=GTOC12.μ_☉)
+    return ImpulsiveSpacecraft(ET_launch, target_asteroid, μ)
 end
 
 function Base.copy(c::ImpulsiveSpacecraft)
-    ImpulsiveSpacecraft(c.ET_launch, c.target_asteroid)
+    ImpulsiveSpacecraft(c.ET_launch, c.target_asteroid, c.μ)
 end
 
 function RD.discrete_dynamics(model::ImpulsiveSpacecraft, x, u, t, dt)
     ΔV = u
     x₀⁺ = x + [0;0;0; ΔV[:] ]
-    xₜ =  propagate_universal(x₀⁺, dt)
+    xₜ =  propagate_universal(x₀⁺, dt; μ=model.μ)
     SVector{length(xₜ)}(xₜ)
 end
 
@@ -129,13 +131,28 @@ RD.state_dim(::ImpulsiveSpacecraft) = 6
 RD.control_dim(::ImpulsiveSpacecraft) = 3
 
 ## Problem definition
+# TODO: Add problem scaling (i.e. make everything scale to canonical units)
+r⃗₀ = x₀[1:3]
+v⃗₀ = x₀[4:6]
+CDU = norm(r⃗₀)  # Canonical Distance Unit
+CTU = √(CDU^3/GTOC12.μ_☉)# Canonical Time Unit
+μ_canonical = 1.0
+
+r⃗₀ = r⃗₀/CDU
+v⃗₀ = v⃗₀/(CDU/CTU)
+x₀ = vcat(r⃗₀, v⃗₀)
+x_target = vcat( x_target[1:3]/CDU, x_target[4:6]/(CDU/CTU))
+ΔV∞_max = 6000/(CDU/CTU) # Max of 6 km/s hyperbolic excess
+ΔV_departure_1 /= (CDU/CTU)
+Δt = t_transfer/CTU
+
 
 # Model and discretization
 target_asteroid = Asteroid(ID_min)
-model = ImpulsiveSpacecraft(GTOC12.ET₀, target_asteroid)
+model = ImpulsiveSpacecraft(ET_launch=GTOC12.ET₀, target_asteroid=target_asteroid, μ=μ_canonical)
 n,m = RD.dims(model)
-tf = t_transfer  # final time (sec)
-N = 3           # number of knot points, 2 for simple start/end impulses
+tf = Δt  # final time (sec)
+N = 2          # number of knot points, 2 for simple start/end impulses
 dt = tf / (N-1)  # time step (sec)
 # @test (n,m) == (6,3)
 
@@ -145,15 +162,15 @@ x0 = SVector{length(x₀)}(x₀)# initial state
 xf = SVector{length(x_target)}(x_target) # final state
 
 # TODO: Convert costs to just Σ(ΔV)
-Q = Diagonal(@SVector ones(n))
+Q = 1e-10* Diagonal(@SVector ones(n)) # Don't penalize intermediate states at all. Just ΔV. Constrain final position
 R = Diagonal(@SVector ones(m))
-Qf = Diagonal( @SVector ones(n))
+Qf = Diagonal( @SVector [0;0;0;1;1;1]) # Only penalize final velocity (treat ΔV to match at the end as part of objective)
 obj = LQRObjective(Q, R, Qf, xf, N)
 
 # Add constraints
 conSet = ConstraintList(n,m,N)
-add_constraint!(conSet, GoalConstraint(xf), N)
-bnd = BoundConstraint(n,m, u_min=-6000/sqrt(m)*ones(m), u_max=6000/sqrt(m)*ones(m)) # 6 km/s limit on hyperbolic excess velocity
+add_constraint!(conSet, GoalConstraint(xf, 1:3), N) # Just constrain the position at the end
+bnd = BoundConstraint(n,m, u_min=-ΔV∞_max/sqrt(m)*ones(m), u_max=ΔV∞_max/sqrt(m)*ones(m)) # 6 km/s limit on hyperbolic excess velocity
 add_constraint!(conSet, bnd, 1:N-1)
 
 # Initial guess
@@ -172,12 +189,16 @@ rollout!(prob);
 # Uh, solve the problem?
 using Altro
 opts = SolverOptions(;
-    constraint_tolerance = 1.0,
-    cost_tolerance = 1.0,
-    cost_tolerance_intermediate = 1.0,
-    max_cost_value = 1.0e30,
-    max_state_value = 1.0e30,
-    max_control_value = 6.0e30
+    penalty_initial = 1000.0,
+    penalty_scaling = 1e-4,
+    # constraint_tolerance = 1000.0,
+    # cost_tolerance = 1000.0,
+    # max_cost_value = 1.0e30,
+    # max_state_value = 1.0e15,
+    # max_control_value = 6.0e3,
+    # projected_newton = false
+    # cost_tolerance_intermediate = 1.0,
+
     # Optimality Tolerances
     
 
@@ -203,9 +224,14 @@ println("Cost: ", cost(solver))
 println("Iterations: ", iterations(solver))
 
 # Extract states and controls
-X = states(prob)
-U = controls(prob)
-t = gettimes(prob)
+X_canonical = states(prob)
+U_canonical = controls(prob)
+t_canonical = gettimes(prob)
+
+# Redimensionalize output based on canonical units
+X_dimensional = [vcat(X[1:3]*CDU, X[4:6]*CDU/CTU) for X in X_canonical]
+U_dimensional = [U*CDU/CTU for U in U_canonical]
+
 
 # Xrollout = [copy(x0) for k = 1:N]
 # Urollout = [copy(u0) for k = 1:N]

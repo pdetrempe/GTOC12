@@ -18,10 +18,11 @@ function get_c2_c3(ψ)
 end
 
 # Vallado Algorithm 8
-function solve_for_universal_variable(; Χ₀, α, μ, r⃗₀, v⃗₀, Δt, tol=1e-6 )
+function solve_for_universal_variable(; Χ₀, α, μ=GTOC12.μ_☉, r⃗₀, v⃗₀, Δt, tol=1e-6, MAX_ITER=10 )
     r₀ = norm(r⃗₀)
 
     Χₙ = Χ₀
+    num_iter = 0
     while true
         ψ = Χₙ^2 * α
 
@@ -31,7 +32,10 @@ function solve_for_universal_variable(; Χ₀, α, μ, r⃗₀, v⃗₀, Δt, to
 
         Χₙ⁺ = Χₙ + (√μ * Δt - Χₙ^3 * c3 - (r⃗₀ ⋅ v⃗₀) / √μ * Χₙ^2 * c2 - r₀ * Χₙ * (1 - ψ * c3)) / r
 
-        abs(Χₙ⁺ - Χₙ) < tol || return Χₙ⁺, ψ, r
+        # Check if we meet break conditions
+        abs(Χₙ⁺ - Χₙ) > tol || return Χₙ⁺, ψ, r
+
+        # 
 
         Χₙ = Χₙ⁺
 
