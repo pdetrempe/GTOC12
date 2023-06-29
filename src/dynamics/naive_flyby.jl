@@ -29,7 +29,6 @@ end
 
 function hyp_exit_r⃗(; x⃗∞, μ_CB_or_CB_name)
     r⃗∞ = view(x⃗∞, 1:3)
-    v⃗∞ = view(x⃗∞, 4:6)
     return vrotv( # Mirror the radius vector "at infinity" about the periapsis vector
         r⃗∞, # To be rotated
         e⃗(x⃗=x⃗∞, μ_CB_or_CB_name=μ_CB_or_CB_name), # periapsis vector (not required to be unit vector)
@@ -50,7 +49,7 @@ end
 function hyp_exit_x⃗(; x⃗∞, μ_CB_or_CB_name)
     r⃗∞ = view(x⃗∞, 1:3)
     v⃗∞ = view(x⃗∞, 4:6)
-    ecc = e⃗(r⃗=r⃗∞, v⃗=v⃗∞, μ_CB_or_CB_name=μ_CB_or_CB_name)
+    ecc = e⃗(x⃗=x⃗∞, μ_CB_or_CB_name=μ_CB_or_CB_name)
     exit_x⃗ = Vector{Float64}(undef, 6)
     exit_x⃗[1:3] = vrotv( # Mirror the radius vector "at infinity" about the periapsis vector
         r⃗∞, # To be rotated
@@ -60,7 +59,7 @@ function hyp_exit_x⃗(; x⃗∞, μ_CB_or_CB_name)
     exit_x⃗[4:6] = vrotv(
         v⃗∞,
         r⃗∞ × v⃗∞, # axis of rotation as specific angular momentum vector
-        hyp_turn_angle(e=norm(ecc)) # turn by the hyperbolic turn angle
+        2 * asin(1 / norm(ecc)) # Vallado 4e Eq. 2-28 (p53) # turn by the hyperbolic turn angle
     )
     return exit_x⃗
 end
