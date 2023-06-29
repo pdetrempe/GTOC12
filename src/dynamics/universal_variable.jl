@@ -35,7 +35,11 @@ function solve_for_universal_variable(; Χ₀, α, μ=GTOC12.μ_☉, r⃗₀, v�
         # Check if we meet break conditions
         abs(Χₙ⁺ - Χₙ) > tol || return Χₙ⁺, ψ, r
 
-        # 
+        # Add error for violation of max iterations
+        if num_iter > MAX_ITER
+            err = ErrorException("Max number of iterations reached in Kepler's Equation. Check your units.")
+            throw(err)
+        end
 
         Χₙ = Χₙ⁺
 

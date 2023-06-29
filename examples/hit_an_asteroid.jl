@@ -29,10 +29,9 @@ x_target = get_asteroid_state(asteroid, ET_target)
 r_target = view(x_target, 1:3)
 
 # NOTE: This is super brittle to initial conditions
-# TODO: add graceful error handling
 # TODO: add a Lambert targetter for doing initial guess
 # TODO: do a time sweep of Lambert trajectories to minimize DV
-x₀⁺, xₜ = fixed_time_single_shoot( x₀, t_transfer, r_target; print_iter=true)
+x₀⁺, xₜ = fixed_time_single_shoot( x₀, t_transfer, r_target; print_iter=false)
 ΔV_departure_1 = ( x₀⁺ - x₀ )[4:6]
 ΔV_arrival_1 = (xₜ - x_target )[4:6]
 
@@ -49,8 +48,6 @@ t_coast = 24*3600
 # x₀⁺_2, xₜ = fixed_time_single_shoot( x₀, t_transfer, r_target; print_iter=false)
 # ΔV_departure_2 = ( x₀⁺_2 - x₀ )[4:6]
 # ΔV_arrival_2 = (xₜ - x_target )[4:6]
-
-# TODO: URGENT: Optimize/benchmark new univerasl variable propagation
 
 
 # Plot Earth/asteroid/spacecraft
@@ -106,7 +103,7 @@ end
 
 
 
-@autodiff struct ImpulsiveSpacecraft <: TO.DiscreteDynamics
+@autodiff struct ImpulsiveSpacecraft <: RD.DiscreteDynamics
     ET_launch::Float64
     target_asteroid::Asteroid
     μ::Float64
@@ -120,6 +117,13 @@ function Base.copy(c::ImpulsiveSpacecraft)
     ImpulsiveSpacecraft(c.ET_launch, c.target_asteroid, c.μ)
 end
 
+# function RD.discrete_dynamics!(model::ImpulsiveSpacecraft, ẋ, x, u, t, dt)
+#     ΔV = u
+#     x₀⁺ = x + [0;0;0; ΔV[:] ]
+#     ẋ[:] =  propagate_universal(x₀⁺, dt; μ=model.μ)
+#     nothing
+# end
+
 function RD.discrete_dynamics(model::ImpulsiveSpacecraft, x, u, t, dt)
     ΔV = u
     x₀⁺ = x + [0;0;0; ΔV[:] ]
@@ -131,7 +135,7 @@ RD.state_dim(::ImpulsiveSpacecraft) = 6
 RD.control_dim(::ImpulsiveSpacecraft) = 3
 
 ## Problem definition
-# TODO: Add problem scaling (i.e. make everything scale to canonical units)
+# roblem scaling via canonical units (this makes the solver not hate you)
 r⃗₀ = x₀[1:3]
 v⃗₀ = x₀[4:6]
 CDU = norm(r⃗₀)  # Canonical Distance Unit
@@ -154,7 +158,6 @@ n,m = RD.dims(model)
 tf = Δt  # final time (sec)
 N = 2          # number of knot points, 2 for simple start/end impulses
 dt = tf / (N-1)  # time step (sec)
-# @test (n,m) == (6,3)
 
 # Objective
 # Note: May have to tune on a segment-by-segment basis
@@ -162,8 +165,8 @@ x0 = SVector{length(x₀)}(x₀)# initial state
 xf = SVector{length(x_target)}(x_target) # final state
 
 # TODO: Convert costs to just Σ(ΔV)
-Q = 1e-10* Diagonal(@SVector ones(n)) # Don't penalize intermediate states at all. Just ΔV. Constrain final position
-R = Diagonal(@SVector ones(m))
+Q = Diagonal(@SVector zeros(n)) # Don't penalize intermediate states at all.
+R = 1e-10 * Diagonal(@SVector ones(m))  # Don't Penalize ΔV (control) since we get it for free from launch vehicle
 Qf = Diagonal( @SVector [0;0;0;1;1;1]) # Only penalize final velocity (treat ΔV to match at the end as part of objective)
 obj = LQRObjective(Q, R, Qf, xf, N)
 
@@ -174,8 +177,8 @@ bnd = BoundConstraint(n,m, u_min=-ΔV∞_max/sqrt(m)*ones(m), u_max=ΔV∞_max/s
 add_constraint!(conSet, bnd, 1:N-1)
 
 # Initial guess
-# u0 = SVector{length(ΔV_departure_1)}(ΔV_departure_1) # Try warm-starting with shooting method solution?
-u0 = @SVector zeros(m)
+u0 = SVector{length(ΔV_departure_1)}(ΔV_departure_1) # Try warm-starting with shooting method solution?
+# u0 = @SVector zeros(m)
 
 # Set up problem
 
@@ -183,16 +186,16 @@ u0 = @SVector zeros(m)
 
 prob = Problem(model, obj, x0, tf, xf=xf, constraints=conSet)
 initial_controls!(prob, u0)
-rollout!(prob);
+rollout!(RD.InPlace(), prob);
 
 
 # Uh, solve the problem?
 using Altro
 opts = SolverOptions(;
-    penalty_initial = 1000.0,
-    penalty_scaling = 1e-4,
-    # constraint_tolerance = 1000.0,
-    # cost_tolerance = 1000.0,
+    penalty_initial = 100.0,
+    penalty_scaling = 1.0,
+    constraint_tolerance = 1e-6,
+    cost_tolerance = 1e-6
     # max_cost_value = 1.0e30,
     # max_state_value = 1.0e15,
     # max_control_value = 6.0e3,
@@ -232,17 +235,3 @@ t_canonical = gettimes(prob)
 X_dimensional = [vcat(X[1:3]*CDU, X[4:6]*CDU/CTU) for X in X_canonical]
 U_dimensional = [U*CDU/CTU for U in U_canonical]
 
-
-# Xrollout = [copy(x0) for k = 1:N]
-# Urollout = [copy(u0) for k = 1:N]
-# for k = 1:N-1
-#     Xrollout[k+1] = RD.discrete_dynamics(
-#         get_model(prob, k), Xrollout[k], Urollout[k], dt*(k-1), dt
-#     )
-# end
-# # @test Xrollout ≈ X 
-
-
-# # Convert to matrices
-# Xmat = hcat(Vector.(X)...)
-# Umat = hcat(Vector.(U)...)

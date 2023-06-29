@@ -6,14 +6,16 @@ using Plots
 _, ID_min = findmin(abs.(GTOC12.asteroid_df.sma/au2m .- 1))
 asteroid = GTOC12.asteroid_df[ID_min, :]
 
+ET_start = GTOC12.ET₀ + 1/4*365*24*3600
+
 # Try out shooting method to hit asteroid
 furnish_all_kernels()
-DV₀ = [0; 0; 0]
-x₀ = get_planet_state("EARTH", GTOC12.ET₀) + [0;0;0;DV₀[:]]
+DV₀ = [0; 1000; 0]
+x₀ = get_planet_state("EARTH", ET_start) + [0;0;0;DV₀[:]]
 
 # Transfer time
 t_transfer = 1/2 * 365 * 24 * 3600
-ET_target = GTOC12.ET₀ + t_transfer
+ET_target = ET_start + t_transfer
 
 # Transfer via Keplerian propagation
 # x_transfer_Kepler = propagate_keplerian(x₀, t_transfer)
