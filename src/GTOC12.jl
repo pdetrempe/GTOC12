@@ -26,6 +26,10 @@ module GTOC12
     # Plotting
     include("plotting/plotting.jl")
 
+    function __init__()
+        furnish_all_kernels()
+    end
+
 
 
 
