@@ -87,7 +87,7 @@ function ω(; x⃗, μ_CB_or_CB_name)
     v⃗ = view(x⃗, 4:6)
     h⃗ = r⃗ × v⃗
     n⃗ = [0, 0, 1] × h⃗ # Vallado 4e Eq. 2-83 (p99)
-    ecc = e⃗(r⃗=r⃗, v⃗=v⃗, μ_CB_or_CB_name=μ_CB_or_CB_name)
+    ecc = e⃗(x⃗=x⃗, μ_CB_or_CB_name=μ_CB_or_CB_name)
     AOP = acos((n⃗ ⋅ ecc) / (norm(n⃗) * norm(ecc))) # Vallado 4e Eq. 2-85 (p100)
     return ecc[3] > 0 ? AOP : 2π - AOP
 end
