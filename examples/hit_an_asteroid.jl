@@ -1,8 +1,6 @@
 using GTOC12
 using Plots
 
-# Import asteroids
-asteroid_df = get_asteroid_df()
 
 # Find asteroid closest (in terms of orbital energy) to the Earth
 _, ID_min = findmin(abs.(asteroid_df.sma/au2m .- 1))
