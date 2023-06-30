@@ -117,12 +117,12 @@ function Base.copy(c::ImpulsiveSpacecraft)
     ImpulsiveSpacecraft(c.ET_launch, c.target_asteroid, c.μ)
 end
 
-# function RD.discrete_dynamics!(model::ImpulsiveSpacecraft, ẋ, x, u, t, dt)
-#     ΔV = u
-#     x₀⁺ = x + [0;0;0; ΔV[:] ]
-#     ẋ[:] =  propagate_universal(x₀⁺, dt; μ=model.μ)
-#     nothing
-# end
+function RD.discrete_dynamics!(model::ImpulsiveSpacecraft, ẋ, x, u, t, dt)
+    ΔV = u
+    x₀⁺ = x + [0;0;0; ΔV[:] ]
+    ẋ[:] =  propagate_universal(x₀⁺, dt; μ=model.μ)
+    nothing
+end
 
 function RD.discrete_dynamics(model::ImpulsiveSpacecraft, x, u, t, dt)
     ΔV = u
