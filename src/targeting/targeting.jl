@@ -11,7 +11,7 @@ function calculate_miss_distance(x_aug)
     t = x_aug[7]
     rₜ_des = x_aug[8:10]
 
-    xₜ = propagate_keplerian(x₀, t)
+    xₜ = propagate_universal(x₀, t)
 
     cost = xₜ[1:3] - rₜ_des
 end
@@ -58,6 +58,6 @@ function fixed_time_single_shoot( x₀, t_shoot, r_target; MAX_ITER = 50, print_
             num_iter += 1
 
         end
-    xₜ = propagate_keplerian(x₀⁺, t_shoot)
+    xₜ = propagate_universal(x₀⁺, t_shoot)
     return x₀⁺, xₜ
 end
