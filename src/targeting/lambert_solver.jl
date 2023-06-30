@@ -72,7 +72,6 @@ function lambert(; r⃗₀, r⃗, Δt, tₘ, μ=GTOC12.μ_☉, MAX_ITER=50, tol=
         end
 
         ψₙ⁺ = (ψ_up + ψ_low) / 2
-        println("ψₙ⁺ = "*string(ψₙ⁺))
 
         c2, c3 = get_c2_c3(ψₙ⁺)
 
@@ -88,6 +87,5 @@ function lambert(; r⃗₀, r⃗, Δt, tₘ, μ=GTOC12.μ_☉, MAX_ITER=50, tol=
             throw(err)
         end
         num_iter += 1
-        println(num_iter)
     end
 end
