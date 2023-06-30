@@ -22,6 +22,7 @@ module GTOC12
 
     # Targeters and Optimizers
     include("targeting/targeting.jl")
+    include("targeting/lambert_solver.jl")
 
     # Plotting
     include("plotting/plotting.jl")
