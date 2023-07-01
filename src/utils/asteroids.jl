@@ -1,6 +1,6 @@
-using CSV, DataFrames, SPICE, GTOC12
 
-export get_asteroid_df, get_asteroid_state, asteroid_df
+
+export get_asteroid_df, get_asteroid_state, asteroid_df, Asteroid
 
 function get_asteroid_df()
     # furnish SPICE kernels if they haven't been loaded yet
@@ -62,6 +62,43 @@ function get_asteroid_state(asteroid, ET)
             asteroid.argperi,
             ν],
         μ_CB_or_CB_name=μ_☉)
+end
+
+
+struct Asteroid
+    sma::Float64
+    ecc::Float64
+    inc::Float64
+    LAN::Float64
+    argperi::Float64
+    mean_anom::Float64
+    ET₀::Float64
+    oe::SVector{6,Float64}
+    x_ET₀::SVector{6,Float64}
+
+    # Calculate relevant quantities at construction
+    function Asteroid(sma::Float64, ecc::Float64, inc::Float64, LAN::Float64, argperi::Float64, mean_anom::Float64, ET₀::Float64)
+        ν = M2ν(; M=mean_anom, ecc=ecc)
+        oe = @SVector [sma, ecc, inc, LAN, argperi, ν]
+        x_ET₀ = COE2RV( COE=oe )
+        return new( sma, ecc, inc, LAN, argperi, mean_anom, ET₀, oe, x_ET₀)
+    end
+end
+
+function Asteroid(;sma, ecc, inc, LAN, argperi, mean_anom, ET₀=GTOC12.ET₀ )
+    return Asteroid( sma, ecc, inc, LAN, argperi, mean_anom, ET₀ )
+end
+
+# Initialize from ID/data frame row
+function Asteroid(ID::Int)
+    asteroid = GTOC12.asteroid_df[ID, :]
+    return Asteroid(;sma=asteroid.sma, 
+                    ecc=asteroid.ecc, 
+                    inc=asteroid.inc, 
+                    LAN=asteroid.LAN, 
+                    argperi=asteroid.argperi, 
+                    mean_anom=asteroid.mean_anom, 
+                    ET₀=asteroid.ET )
 end
 
 # Only load/manipulate dataframe once

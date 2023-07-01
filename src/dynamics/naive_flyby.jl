@@ -1,4 +1,3 @@
-using LinearAlgebra, SPICE
 
 export body_SOI, hyp_turn_angle, hyp_periapsis, hyp_exit_r⃗, hyp_exit_v⃗, hyp_exit_x⃗, flyby_TOF, naive_flyby
 

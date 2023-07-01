@@ -1,4 +1,3 @@
-using ForwardDiff
 
 export fixed_time_single_shoot, calculate_miss_distance
 

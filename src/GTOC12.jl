@@ -1,5 +1,11 @@
 module GTOC12
     using DataFrames
+    using CSV
+    using SPICE
+    using StaticArrays
+    using LinearAlgebra
+    using ForwardDiff, FiniteDiff
+    using RobotDynamics
 
 
     # File paths
@@ -23,6 +29,7 @@ module GTOC12
     # Targeters and Optimizers
     include("targeting/targeting.jl")
     include("targeting/lambert_solver.jl")
+    include("targeting/spacecraft.jl")
 
     # Plotting
     include("plotting/plotting.jl")
