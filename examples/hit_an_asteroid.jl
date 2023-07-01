@@ -2,6 +2,7 @@ using GTOC12
 using SPICE
 using ForwardDiff
 using LinearAlgebra
+using Plots
 
 # Import asteroids
 asteroid_df = get_asteroid_df()
@@ -26,6 +27,8 @@ t_shoot = 1 / 2 * 365 * 24 * 3600
 # 1. Get asteroid position (target)
 ET_target = GTOC12.ET₀ + t_shoot
 x_target = get_asteroid_state(asteroid, ET_target)
+println("x_target: ")
+println(x_target)
 
 # 2. Propagate spacecraft from initial state
 xₜ = propagate_keplerian(x₀, t_shoot)
