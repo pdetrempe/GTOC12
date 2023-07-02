@@ -6,6 +6,8 @@ module GTOC12
     using LinearAlgebra
     using ForwardDiff, FiniteDiff
     using RobotDynamics
+    using Altro
+    using TrajectoryOptimization
 
 
     # File paths
@@ -30,9 +32,12 @@ module GTOC12
     include("targeting/targeting.jl")
     include("targeting/lambert_solver.jl")
     include("targeting/spacecraft.jl")
+    include("optimization/optimization.jl")
 
     # Plotting
     include("plotting/plotting.jl")
+
+
 
 
 
