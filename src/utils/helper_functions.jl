@@ -15,6 +15,11 @@ function vec_from_span(span; num_points=100)
     end
 end
 
+# Helper function to get states for plotting
+function get_states_from_ETs(body::CelestialBody; ETs)
+    x_planet = hcat([get_body_state(body; ET=ET) for ET in ETs]...)
+end
+
 #---------------------- Utilities for converting to/from canonical states
 get_canonical_position(r; CDU) = r/CDU
 get_canonical_velocity(v; CDU, CTU) = v/(CDU/CTU)

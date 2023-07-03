@@ -64,8 +64,8 @@ function get_asteroid_state(asteroid, ET)
         μ_CB_or_CB_name=μ_☉)
 end
 
-
-struct Asteroid
+# Define a celestial body type since both Asteroids and Planets will be on Keplerian rails
+struct Asteroid <: CelestialBody
     sma::Float64
     ecc::Float64
     inc::Float64
@@ -75,18 +75,19 @@ struct Asteroid
     ET₀::Float64
     oe::SVector{6,Float64}
     x_ET₀::SVector{6,Float64}
+    ID::Int
 
     # Calculate relevant quantities at construction
-    function Asteroid(sma::Float64, ecc::Float64, inc::Float64, LAN::Float64, argperi::Float64, mean_anom::Float64, ET₀::Float64)
+    function Asteroid(sma::Float64, ecc::Float64, inc::Float64, LAN::Float64, argperi::Float64, mean_anom::Float64, ET₀::Float64, ID::Int)
         ν = M2ν(; M=mean_anom, ecc=ecc)
         oe = @SVector [sma, ecc, inc, LAN, argperi, ν]
         x_ET₀ = COE2RV( COE=oe )
-        return new( sma, ecc, inc, LAN, argperi, mean_anom, ET₀, oe, x_ET₀)
+        return new( sma, ecc, inc, LAN, argperi, mean_anom, ET₀, oe, x_ET₀, ID)
     end
 end
 
-function Asteroid(;sma, ecc, inc, LAN, argperi, mean_anom, ET₀=GTOC12.ET₀ )
-    return Asteroid( sma, ecc, inc, LAN, argperi, mean_anom, ET₀ )
+function Asteroid(;sma, ecc, inc, LAN, argperi, mean_anom, ET₀=GTOC12.ET₀, ID )
+    return Asteroid( sma, ecc, inc, LAN, argperi, mean_anom, ET₀, ID )
 end
 
 # Initialize from ID/data frame row
@@ -98,7 +99,8 @@ function Asteroid(ID::Int)
                     LAN=asteroid.LAN, 
                     argperi=asteroid.argperi, 
                     mean_anom=asteroid.mean_anom, 
-                    ET₀=asteroid.ET )
+                    ET₀=asteroid.ET,
+                    ID=ID )
 end
 
 # Only load/manipulate dataframe once
