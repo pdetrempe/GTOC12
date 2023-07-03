@@ -9,3 +9,4 @@ const v∞_max = 6 * 1000; # m/s, hyperbolic excess velocity relative to Earth
 const POS_ABS_TOL = 1e6; # 1000 km miss distance tolerance for asteroid events
 const VEL_ABS_TOL = 1;   # 1 m/s tolerance
 const MASS_ABS_TOL = .001; # .001 kg tolerance
+const TT_start = "2035, Jan 1, 00:00:00.0000 (TDT)" # TT is TDT in SPICE
