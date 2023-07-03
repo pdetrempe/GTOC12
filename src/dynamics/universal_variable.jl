@@ -37,7 +37,7 @@ function solve_for_universal_variable(; Χ₀, α, μ=GTOC12.μ_☉, r⃗₀, v�
 
         # Add error for violation of max iterations
         if num_iter > MAX_ITER
-            err = ErrorException("Max number of iterations reached in Kepler's Equation. Check your units.")
+            err = ErrorException("Universal Variable Propagation: Max number of iterations reached in Kepler's Equation. Check your units.")
             throw(err)
         end
 
@@ -52,7 +52,7 @@ function propagate_universal(x⃗, Δt; μ=GTOC12.μ_☉, tol=1e-6)
     r⃗₀ = x⃗[1:3]
     v⃗₀ = x⃗[4:6]
 
-    # Need to normalize by canonical units??
+    # Need to normalize by canonical units
     CDU = norm(r⃗₀)  # Canonical Distance Unit
     CTU = √(CDU^3/μ)# Canonical Time Unit
     μ = 1
