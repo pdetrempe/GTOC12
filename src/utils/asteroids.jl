@@ -25,10 +25,10 @@ function get_asteroid_df()
 
     # Convert units to meters/radians
     asteroid_df.sma *= au2m
-    asteroid_df.inc = map(deg2rad, asteroid_df.inc)
-    asteroid_df.LAN = map(deg2rad, asteroid_df.LAN)
-    asteroid_df.argperi = map(deg2rad, asteroid_df.argperi)
-    asteroid_df.mean_anom = map(deg2rad, asteroid_df.mean_anom)
+    asteroid_df.inc = deg2rad.(asteroid_df.inc)
+    asteroid_df.LAN = deg2rad.(asteroid_df.LAN)
+    asteroid_df.argperi = deg2rad.(asteroid_df.argperi)
+    asteroid_df.mean_anom = deg2rad.(asteroid_df.mean_anom)
 
     # Add other time epochs that are useful
     TT_start = "2035, Jan 1, 00:00:00.0000 (TDT)" # TT is TDT in SPICE
