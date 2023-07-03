@@ -1,6 +1,7 @@
 module GTOC12
     using DataFrames
 
+    export asteroid_df, ET₀
 
     # File paths
     const PROBLEM_DATA = joinpath(@__DIR__, "../problem")
@@ -28,11 +29,11 @@ module GTOC12
 
     function __init__()
         furnish_all_kernels()
+        # Only load/manipulate dataframe once
+        global asteroid_df = get_asteroid_df()
+
+        # Problem start time
+        global ET₀ = asteroid_df[1, :ET]
     end
-
-
-
-
-
 
 end

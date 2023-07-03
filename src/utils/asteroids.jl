@@ -1,6 +1,6 @@
 using CSV, DataFrames, SPICE, GTOC12
 
-export get_asteroid_df, get_asteroid_state, asteroid_df
+export get_asteroid_df, get_asteroid_state
 
 function get_asteroid_df()
     # furnish SPICE kernels if they haven't been loaded yet
@@ -62,9 +62,3 @@ function get_asteroid_state(asteroid, ET)
             ν],
         μ_CB_or_CB_name=μ_☉)
 end
-
-# Only load/manipulate dataframe once
-const asteroid_df = get_asteroid_df()
-
-# Problem start time
-const ET₀ = asteroid_df[1, :ET]
