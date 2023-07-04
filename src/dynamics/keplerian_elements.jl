@@ -116,6 +116,7 @@ end
 
 "   COE = [a,e,i,Ω,ω,ν]"
 function COE2RV(; COE, μ_CB_or_CB_name) # Vallado 4e Algorithm 10 (p118)
+    # Classical Orbital Elements to Pos Vel
     a, e, i, Ω, ω, ν = COE
     μ_CB = get_GM(μ_CB_or_CB_name)
     p = a * (1 - e^2)

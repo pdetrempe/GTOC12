@@ -39,11 +39,13 @@ function low_thrust_optimal_control!(dstate, state, p, t)
     # Define A and B matrices (time varying)
     # *************************************************
     A, B = getAB(x)
+    #xₜ = propagate_keplerian(x₀, t_shoot)
 
     # Optimal Control Strategy 
     # *************************************************
     #u_star = [0,0,0]
     #δ_star = 0
+    # TODO add logic to make this not a discontinuous change
     u_star = -B'*λ/norm(B'*λ)  
     S = norm(B'*λ) .- 1        
     if S > 0
@@ -87,21 +89,12 @@ function bc2!(residual, state, p, t)
     # u[1] is the beginning of the time span, and u[end] is the ending
     # TODO update params to input p_0, p_f
     #p_0, p_f = p
-    kep_init = get_planet_state("EARTH", GTOC12.ET₀) + [0;0;0;DV₀[:]]
-    MEE_init = keplerian2MEE(a=kep_init[1], 
-                             e=kep_init[2], 
-                             i=kep_init[3], 
-                             Ω=kep_init[4], 
-                             ω=kep_init[5], 
-                             ν=kep_init[6])
+    cart_init = get_planet_state("EARTH", GTOC12.ET₀) + [0;0;0;DV₀[:]]
+    MEE_init  = Cartesian2MEE(cart_init, μ=GTOC12.μ_☉)
 
-    kep_target = [-1.142626400391252e11, -7.363183565567313e10, 3.999306363734976e10, 2629.801421941236, -24735.59255707686, -2945.5498712683434]
-    MEE_target = keplerian2MEE(a=kep_target[1], 
-                               e=kep_target[2], 
-                               i=kep_target[3], 
-                               Ω=kep_target[4], 
-                               ω=kep_target[5], 
-                               ν=kep_target[6])
+    cart_target = [-1.142626400391252e11, -7.363183565567313e10, 3.999306363734976e10, 2629.801421941236, -24735.59255707686, -2945.5498712683434]
+    #MEE_init = Cartesian2MEE(cart_init, μ=GTOC12.μ_☉)
+    MEE_target = Cartesian2MEE(cart_target, μ=GTOC12.μ_☉)
     p_0 = MEE_init
     p_f = MEE_target
     # initial boundary value 
@@ -139,13 +132,15 @@ plot_planet!(planet="EARTH"; label="Earth", color=colormap("Blues"))
 # Try out shooting method to hit asteroid
 
 DV₀ = [-GTOC12.v∞_max; 0; 0]
-kep_init = get_planet_state("EARTH", GTOC12.ET₀) + [0;0;0;DV₀[:]]
-MEE_init = keplerian2MEE(a=kep_init[1], 
-                         e=kep_init[2], 
-                         i=kep_init[3], 
-                         Ω=kep_init[4], 
-                         ω=kep_init[5], 
-                         ν=kep_init[6])
+#kep_init = get_planet_state("EARTH", GTOC12.ET₀) + [0;0;0;DV₀[:]]
+#MEE_init = keplerian2MEE(a=kep_init[1], 
+#                         e=kep_init[2], 
+#                         i=kep_init[3], 
+#                         Ω=kep_init[4], 
+#                         ω=kep_init[5], 
+#                         ν=kep_init[6])
+cart_init = get_planet_state("EARTH", GTOC12.ET₀) + [0;0;0;DV₀[:]]
+MEE_init  = Cartesian2MEE(cart_init, μ=GTOC12.μ_☉)
 m = 500 # kg
 μ=GTOC12.μ_☉
 state_init = vcat(MEE_init, m, zeros(6))
@@ -155,8 +150,8 @@ t_shoot = 3600
 tspan = (0, t_shoot)
 
 bvp2 = TwoPointBVProblem(low_thrust_optimal_control!, bc2!, state_init, tspan) #, p)
-sol2 = solve(bvp2, MIRK4(), dt = 1) # we need to use the MIRK4 solver for TwoPointBVProblem
-plot(sol2)
+sol2 = solve(bvp2, MIRK4(), dt=1) # we need to use the MIRK4 solver for TwoPointBVProblem
+#plot(sol2)
 
 #state = state_init
 #x = state[1:6]; m = state[7]; λ = state[8:13]
@@ -168,3 +163,8 @@ plot(sol2)
 #dH_dx = ForwardDiff.jacobian(x -> calculate_hamiltonian(x, p ), x[1:6])
 #dH_dx = ForwardDiff.gradient(x -> calculate_hamiltonian(x, p ), x) #[1:6])
 #calculate_hamiltonian( m, λ, δ_star, u_star, a_grav, T, x)
+
+
+cart_init = get_planet_state("EARTH", GTOC12.ET₀) + [0;0;0;DV₀[:]]
+#function Cartesian2MEE(x⃗; μ)
+MEE_init = Cartesian2MEE(cart_init, μ=GTOC12.μ_☉)
