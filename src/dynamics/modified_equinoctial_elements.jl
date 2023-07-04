@@ -1,4 +1,4 @@
-using LinearAlgebra, UnPack
+using UnPack
 
 export keplerian2MEE, MME2keplerian, MEE2Cartesian, Cartesian2MEE, EOM_MEE!
 
@@ -42,7 +42,7 @@ function MEE2keplerian(; p, f, g, h, k, l)
     [a, e, i, Ω, ω, ν]
 end
 
-function MEE2Cartesian(MEE; μ)
+function MEE2Cartesian(MEE; μ=μ_☉)
     """
     Converts from modified equinoctial elements to Cartesian coordinates
     See https://spsweb.fltops.jpl.nasa.gov/portaldataops/mpg/MPG_Docs/Source%20Docs/EquinoctalElements-modified.pdf
@@ -82,7 +82,7 @@ function MEE2Cartesian(MEE; μ)
     vcat(r⃗, v⃗)
 end
 
-function Cartesian2MEE(x⃗; μ)
+function Cartesian2MEE(x⃗; μ=μ_☉)
     """
     https://degenerateconic.com/modified-equinoctial-elements.html
     """

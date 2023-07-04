@@ -1,6 +1,6 @@
 using SPICE
 
-export e⃗, ν, a, i, Ω, ω, mean_motion, RV2COE, COE2RV, M2EH, EH2ν, M2ν, hyp_anom, ecc_anom, mean_anom, propagate_keplerian
+export e⃗, ν, a, i, Ω, ω, mean_motion, RV2COE, COE2RV, M2EH, EH2ν, M2ν, hyp_anom, ecc_anom, mean_anom
 
 function M2EH(; M, ecc, tol=1e-6)
     if ecc < 1
@@ -45,14 +45,14 @@ function M2ν(; M, ecc, tol=1e-6)
     ν = EH2ν(; E_or_H=E_or_H, ecc=ecc)
 end
 
-function e⃗(; x⃗, μ_CB_or_CB_name)
+function e⃗(; x⃗, μ_CB_or_CB_name=GTOC12.μ_☉)
     r⃗ = view(x⃗, 1:3)
     v⃗ = view(x⃗, 4:6)
     μ_CB = get_GM(μ_CB_or_CB_name)
     return ((norm(v⃗)^2 - μ_CB / norm(r⃗)) * r⃗ - (r⃗ ⋅ v⃗) * v⃗) / μ_CB # Vallado 4e Eq. 2-78 (p98)
 end
 
-function ν(; x⃗, μ_CB_or_CB_name)
+function ν(; x⃗, μ_CB_or_CB_name=GTOC12.μ_☉)
     r⃗ = view(x⃗, 1:3)
     v⃗ = view(x⃗, 4:6)
     ecc = e⃗(x⃗=x⃗, μ_CB_or_CB_name=μ_CB_or_CB_name)
@@ -60,7 +60,7 @@ function ν(; x⃗, μ_CB_or_CB_name)
     return r⃗ ⋅ v⃗ > 0 ? ν̃ : 2π - ν̃ # Correct for halfspace
 end
 
-function a(; x⃗, μ_CB_or_CB_name)
+function a(; x⃗, μ_CB_or_CB_name=GTOC12.μ_☉)
     r⃗ = view(x⃗, 1:3)
     v⃗ = view(x⃗, 4:6)
     return 1 / (2 / norm(r⃗) - norm(v⃗)^2 / get_GM(μ_CB_or_CB_name)) # Vallado 4e Eq. 2-74 (p96)
@@ -82,7 +82,7 @@ function Ω(; x⃗)
     return n⃗[2] > 0 ? RAAN : 2π - RAAN
 end
 
-function ω(; x⃗, μ_CB_or_CB_name)
+function ω(; x⃗, μ_CB_or_CB_name=GTOC12.μ_☉)
     r⃗ = view(x⃗, 1:3)
     v⃗ = view(x⃗, 4:6)
     h⃗ = r⃗ × v⃗
@@ -93,7 +93,7 @@ function ω(; x⃗, μ_CB_or_CB_name)
 end
 
 "   COE = [a,e,i,Ω,ω,ν]"
-function RV2COE(; x⃗, μ_CB_or_CB_name) # Vallado 4e Algorithm 9 (p113)
+function RV2COE(; x⃗, μ_CB_or_CB_name=GTOC12.μ_☉) # Vallado 4e Algorithm 9 (p113)
     r⃗ = view(x⃗, 1:3)
     v⃗ = view(x⃗, 4:6)
     r = norm(r⃗)
@@ -115,8 +115,7 @@ function RV2COE(; x⃗, μ_CB_or_CB_name) # Vallado 4e Algorithm 9 (p113)
 end
 
 "   COE = [a,e,i,Ω,ω,ν]"
-function COE2RV(; COE, μ_CB_or_CB_name) # Vallado 4e Algorithm 10 (p118)
-    # Classical Orbital Elements to Pos Vel
+function COE2RV(; COE, μ_CB_or_CB_name=GTOC12.μ_☉) # Vallado 4e Algorithm 10 (p118)
     a, e, i, Ω, ω, ν = COE
     μ_CB = get_GM(μ_CB_or_CB_name)
     p = a * (1 - e^2)
@@ -144,7 +143,7 @@ function COE2RV(; COE, μ_CB_or_CB_name) # Vallado 4e Algorithm 10 (p118)
     return x⃗
 end
 
-function hyp_anom(; x⃗, μ_CB_or_CB_name)
+function hyp_anom(; x⃗, μ_CB_or_CB_name=GTOC12.μ_☉)
     r⃗ = view(x⃗, 1:3)
     v⃗ = view(x⃗, 4:6)
     ecc = e⃗(x⃗=x⃗, μ_CB_or_CB_name=μ_CB_or_CB_name)
@@ -154,7 +153,7 @@ function hyp_anom(; x⃗, μ_CB_or_CB_name)
     return 2 * atanh(sqrt((e - 1) / (e + 1)) * tan(trueanom / 2)) # Vallado 4e Eq. 2-35 (p56)
 end
 
-function ecc_anom(; x⃗, μ_CB_or_CB_name)
+function ecc_anom(; x⃗, μ_CB_or_CB_name=GTOC12.μ_☉)
     r⃗ = view(x⃗, 1:3)
     v⃗ = view(x⃗, 4:6)
     ecc = e⃗(x⃗=x⃗, μ_CB_or_CB_name=μ_CB_or_CB_name)
@@ -165,11 +164,11 @@ function ecc_anom(; x⃗, μ_CB_or_CB_name)
 end
 
 # Mean motion
-function mean_motion(;a, μ)
+function mean_motion(;a, μ=μ_☉)
     n = √(μ/a^3) 
 end
 
-function mean_anom(; x⃗, μ_CB_or_CB_name)
+function mean_anom(; x⃗, μ_CB_or_CB_name=μ_☉)
     r⃗ = view(x⃗, 1:3)
     v⃗ = view(x⃗, 4:6)
     ecc = e⃗(x⃗=x⃗, μ_CB_or_CB_name=μ_CB_or_CB_name)
@@ -183,22 +182,4 @@ function mean_anom(; x⃗, μ_CB_or_CB_name)
         H = 2 * atanh(sqrt((e - 1) / (e + 1)) * tan(trueanom / 2)) # Vallado 4e Eq. 2-35 (p56)
         return e * sinh(H) - H # Vallado 4e Eq. 2-38 (p57)
     end
-end
-
-# Propagate using Keplerian (2-body) dynamics
-function propagate_keplerian(x₀, t; μ=GTOC12.μ_☉)
-    #    a. convert to COE/MEE
-    oe₀ = RV2COE(x⃗=x₀, μ_CB_or_CB_name=μ)
-    M₀ = mean_anom(x⃗=x₀, μ_CB_or_CB_name=μ)
-    n = mean_motion(a=oe₀[1], μ=μ_☉) # mean motion
-
-    #    b. propagate forward in time
-    Mₜ = M₀ + n * t
-    νₜ = M2ν( M=Mₜ, ecc=oe₀[2]; tol=1e-6)
-
-    #    c. convert back to position
-    oeₜ = copy(oe₀)
-    oeₜ[6] = νₜ
-    xₜ = COE2RV( COE=oeₜ, μ_CB_or_CB_name=μ) # Vallado 4e Algorithm 10 (p118)
-
 end

@@ -5,7 +5,7 @@ export plot_coast!, plot_asteroid_from_df_row, plot_planet!
 # Plot spacecraft trajectory
 function plot_coast!(x₀, tspan; kwargs...)
     tvec = vec_from_span(tspan)
-    states = hcat([propagate_keplerian(x₀, t) for t in tvec]...)
+    states = hcat([propagate_universal(x₀, t) for t in tvec]...)
     
     plot!(states[1, :], states[2, :]; kwargs...)
 
@@ -25,7 +25,7 @@ function plot_asteroid_from_df_row(asteroid; ET_in=[GTOC12.ET₀, GTOC12.ET₀ +
 
 end
 
-# Plot planet
+# Plot planetGTOC12
 function plot_planet!(; planet="EARTH", ET_in=[GTOC12.ET₀, GTOC12.ET₀ + 365 * 24 * 3600], kwargs...)
 
     # Accept start/end time or vector of times

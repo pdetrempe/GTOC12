@@ -1,5 +1,3 @@
-using LinearAlgebra
-
 export DCM_inertial_to_lvlh
 
 function DCM_inertial_to_lvlh(x⃗_inrt)
