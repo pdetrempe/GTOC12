@@ -1,7 +1,7 @@
 module GTOC12
     using DataFrames
 
-    export asteroid_df, ET₀
+    export asteroid_df, planet_df, ET₀
 
     # File paths
     const PROBLEM_DATA = joinpath(@__DIR__, "../problem")
@@ -20,6 +20,7 @@ module GTOC12
     include("utils/asteroids.jl")
     include("utils/defaults.jl")
     include("utils/helper_functions.jl")
+    include("utils/planets_on_rails.jl")
 
     # Targeters and Optimizers
     include("targeting/targeting.jl")
@@ -29,8 +30,9 @@ module GTOC12
 
     function __init__()
         furnish_all_kernels()
-        # Only load/manipulate dataframe once
+        # Only load/manipulate dataframes once
         global asteroid_df = get_asteroid_df()
+        global planet_df = get_planet_df()
 
         # Problem start time
         global ET₀ = asteroid_df[1, :ET]
