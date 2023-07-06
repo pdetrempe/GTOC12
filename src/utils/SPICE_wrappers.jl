@@ -36,9 +36,12 @@ function furnish_all_kernels()
 end 
 
 # Wrap SPICE calls
-function get_planet_state(planet::Union{String,Int}, ET::AbstractFloat; ref_frame::String=default_ref_frame, observer::Union{String,Int}=default_CB_str)
-    # TODO: Use SPICE Int IDs instead of string
-    spkgeo(bodn2c(orbiting_body), 0, base_ref_frame, bodn2c(CB))[1]
+function get_planet_state(
+    planet::Union{String,Int}, 
+    ET::AbstractFloat; 
+    ref_frame::String=default_ref_frame, 
+    observer::Union{String,Int}=default_CB_idx
+    )
     _planet = if planet isa AbstractString
         bodn2c(planet)
     elseif planet isa Integer
