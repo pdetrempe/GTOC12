@@ -26,13 +26,13 @@ get_canonical_velocity(v; CDU, CTU) = v/(CDU/CTU)
 get_canonical_time(t; CTU) = t/CTU
 
 
-function get_canonical_state(x_dimensional, CDU::R, CTU::S) where {R,S<: AbstractFloat}
+function get_canonical_state(x_dimensional, CDU, CTU)
     r_dim = x_dimensional[1:3]
     v_dim = x_dimensional[4:6]
     [get_canonical_position(r_dim; CDU=CDU) ; get_canonical_velocity(v_dim; CDU=CDU, CTU=CTU)] # Non-dimensionalize position/velocity values
 end
 
-function get_canonical_state(x_dimensional, CDU::R; μ=GTOC12.μ_☉) where {R<: AbstractFloat}
+function get_canonical_state(x_dimensional, CDU; μ=GTOC12.μ_☉)
     CTU = √(CDU^3/μ)   # Canonical Time Unit
     get_canonical_state(x_dimensional, CDU, CTU)
 end

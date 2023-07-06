@@ -35,6 +35,7 @@ module GTOC12
     include("targeting/lambert_solver.jl")
     include("targeting/spacecraft.jl")
     include("optimization/optimization.jl")
+    include("dynamics/primer_vector.jl")
 
     # Plotting
     include("plotting/plotting.jl")
