@@ -45,14 +45,14 @@ function M2ν(; M, ecc, tol=1e-6)
     ν = EH2ν(; E_or_H=E_or_H, ecc=ecc)
 end
 
-function e⃗(; x⃗, μ_CB_or_CB_name=GTOC12.μ_☉)
+function e⃗(; x⃗, μ_CB_or_CB_name=μ_☉)
     r⃗ = view(x⃗, 1:3)
     v⃗ = view(x⃗, 4:6)
     μ_CB = get_GM(μ_CB_or_CB_name)
     return ((norm(v⃗)^2 - μ_CB / norm(r⃗)) * r⃗ - (r⃗ ⋅ v⃗) * v⃗) / μ_CB # Vallado 4e Eq. 2-78 (p98)
 end
 
-function ν(; x⃗, μ_CB_or_CB_name=GTOC12.μ_☉)
+function ν(; x⃗, μ_CB_or_CB_name=μ_☉)
     r⃗ = view(x⃗, 1:3)
     v⃗ = view(x⃗, 4:6)
     ecc = e⃗(x⃗=x⃗, μ_CB_or_CB_name=μ_CB_or_CB_name)
@@ -60,7 +60,7 @@ function ν(; x⃗, μ_CB_or_CB_name=GTOC12.μ_☉)
     return r⃗ ⋅ v⃗ > 0 ? ν̃ : 2π - ν̃ # Correct for halfspace
 end
 
-function a(; x⃗, μ_CB_or_CB_name=GTOC12.μ_☉)
+function a(; x⃗, μ_CB_or_CB_name=μ_☉)
     r⃗ = view(x⃗, 1:3)
     v⃗ = view(x⃗, 4:6)
     return 1 / (2 / norm(r⃗) - norm(v⃗)^2 / get_GM(μ_CB_or_CB_name)) # Vallado 4e Eq. 2-74 (p96)
@@ -82,7 +82,7 @@ function Ω(; x⃗)
     return n⃗[2] > 0 ? RAAN : 2π - RAAN
 end
 
-function ω(; x⃗, μ_CB_or_CB_name=GTOC12.μ_☉)
+function ω(; x⃗, μ_CB_or_CB_name=μ_☉)
     r⃗ = view(x⃗, 1:3)
     v⃗ = view(x⃗, 4:6)
     h⃗ = r⃗ × v⃗
@@ -93,7 +93,7 @@ function ω(; x⃗, μ_CB_or_CB_name=GTOC12.μ_☉)
 end
 
 "   COE = [a,e,i,Ω,ω,ν]"
-function RV2COE(; x⃗, μ_CB_or_CB_name=GTOC12.μ_☉) # Vallado 4e Algorithm 9 (p113)
+function RV2COE(; x⃗, μ_CB_or_CB_name=μ_☉) # Vallado 4e Algorithm 9 (p113)
     r⃗ = view(x⃗, 1:3)
     v⃗ = view(x⃗, 4:6)
     r = norm(r⃗)
@@ -115,7 +115,7 @@ function RV2COE(; x⃗, μ_CB_or_CB_name=GTOC12.μ_☉) # Vallado 4e Algorithm 9
 end
 
 "   COE = [a,e,i,Ω,ω,ν]"
-function COE2RV(; COE, μ_CB_or_CB_name=GTOC12.μ_☉) # Vallado 4e Algorithm 10 (p118)
+function COE2RV(; COE, μ_CB_or_CB_name=μ_☉) # Vallado 4e Algorithm 10 (p118)
     a, e, i, Ω, ω, ν = COE
     μ_CB = get_GM(μ_CB_or_CB_name)
     p = a * (1 - e^2)
@@ -143,7 +143,7 @@ function COE2RV(; COE, μ_CB_or_CB_name=GTOC12.μ_☉) # Vallado 4e Algorithm 10
     return x⃗
 end
 
-function hyp_anom(; x⃗, μ_CB_or_CB_name=GTOC12.μ_☉)
+function hyp_anom(; x⃗, μ_CB_or_CB_name=μ_☉)
     r⃗ = view(x⃗, 1:3)
     v⃗ = view(x⃗, 4:6)
     ecc = e⃗(x⃗=x⃗, μ_CB_or_CB_name=μ_CB_or_CB_name)
@@ -153,7 +153,7 @@ function hyp_anom(; x⃗, μ_CB_or_CB_name=GTOC12.μ_☉)
     return 2 * atanh(sqrt((e - 1) / (e + 1)) * tan(trueanom / 2)) # Vallado 4e Eq. 2-35 (p56)
 end
 
-function ecc_anom(; x⃗, μ_CB_or_CB_name=GTOC12.μ_☉)
+function ecc_anom(; x⃗, μ_CB_or_CB_name=μ_☉)
     r⃗ = view(x⃗, 1:3)
     v⃗ = view(x⃗, 4:6)
     ecc = e⃗(x⃗=x⃗, μ_CB_or_CB_name=μ_CB_or_CB_name)
