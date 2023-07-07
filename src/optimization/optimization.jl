@@ -100,9 +100,9 @@ function optimize_continuous_arc(x₀, x_target, Δt; ET_launch=GTOC12.ET₀, as
     x0 = SVector{length(x₀)}(x₀)# initial state
     MEE₀ = Cartesian2MEE(x0; μ=μ_canonical)
     xf = SVector{length(x_target)}(x_target) # final state
-    MEE_f = Cartesian2MEE(x0; μ=μ_canonical)
+    MEE_f = Cartesian2MEE(xf; μ=μ_canonical)
     λ₀ = zeros(6)
-    xf_aug = SVector{n}(vcat(MEE_f,m₀,λ₀ ))
+    xf_aug = SVector{n}(vcat(MEE_f,m₀)) #,λ₀ ))
 
     # Set up costs.
     # TODO: Convert costs to just Σ(ΔV)
@@ -131,10 +131,14 @@ function optimize_continuous_arc(x₀, x_target, Δt; ET_launch=GTOC12.ET₀, as
     # This should be good enough to start with:
     fast_variables = range(MEE₀[end], MEE_f[end], length=N)
 
-    U0 = [get_opt_control_from_state(model::ContinuousSpacecraft, [MEE₀[1:5]; fast_var; m₀; λ₀[:]]) for fast_var in fast_variables]
+    #U0 = [get_opt_control_from_state(model::ContinuousSpacecraft, [MEE₀[1:5]; fast_var; m₀; λ₀[:]]) for fast_var in fast_variables]
+    #U0 = [0.0, 0.0, 0.0]
+    U0 = [fill(0.01, m) for k = 1:N-1]
+    println(U0)
 
     # Set up problem
-    prob = Problem(model, obj, vcat(MEE₀, m₀, λ₀), tf, xf=vcat(MEE_f, m₀, λ₀), constraints=conSet)
+    prob = Problem(model, obj, vcat(MEE₀, m₀), tf, xf=vcat(MEE_f, m₀), constraints=conSet)
+    #prob = Problem(model, obj, vcat(MEE₀, m₀, λ₀), tf, xf=vcat(MEE_f, m₀, λ₀), constraints=conSet)
     initial_controls!(prob, U0)
     rollout!(RD.InPlace(), prob)
 
