@@ -24,7 +24,9 @@ module GTOC12
     # Utilities
     include("utils/SPICE_wrappers.jl")
     include("utils/constants.jl")
+    include("utils/celestial_body.jl")
     include("utils/asteroids.jl")
+    include("utils/planets.jl")
     include("utils/defaults.jl")
     include("utils/helper_functions.jl")
 
@@ -33,6 +35,7 @@ module GTOC12
     include("targeting/lambert_solver.jl")
     include("targeting/spacecraft.jl")
     include("optimization/optimization.jl")
+    include("dynamics/primer_vector.jl")
 
     # Plotting
     include("plotting/plotting.jl")

@@ -3,12 +3,12 @@ using Plots
 
 # Find asteroid closest (in terms of orbital energy) to the Earth
 _, ID_min = findmin(abs.(GTOC12.asteroid_df.sma / au2m .- 1))
-asteroid = GTOC12.asteroid_df[ID_min, :]
+asteroid = Asteroid(ID_min)
 
 # Try out shooting method to hit asteroid
 furnish_all_kernels()
 DV₀ = [-1000; 0; 0]
-x₀ = get_planet_state("EARTH", GTOC12.ET₀) + [0; 0; 0; DV₀[:]]
+x₀ = get_body_state(GTOC12.Earth; ET=GTOC12.ET₀) + [0; 0; 0; DV₀[:]]
 
 # Transfer time
 Δt = 1 / 2 * 365 * 24 * 3600
@@ -17,7 +17,7 @@ x₀ = get_planet_state("EARTH", GTOC12.ET₀) + [0; 0; 0; DV₀[:]]
 # Fixed-time shooting to hit asteroid
 # Get problem parameters: asteroid position (target), initial state, transfer time
 ET_target = GTOC12.ET₀ + Δt
-x_target = get_asteroid_state(asteroid, ET_target)
+x_target = get_body_state(asteroid; ET=ET_target)
 r_target = view(x_target, 1:3)
 
 # NOTE: This is super brittle to initial conditions
@@ -44,15 +44,13 @@ t_coast = 24 * 3600
 
 # Plot Earth/asteroid/spacecraft
 ETs = [GTOC12.ET₀, ET_target]
-plot_asteroid_from_df_row(asteroid; ET_in=ETs)
-plot_planet!(planet="EARTH"; ET_in=ETs, label="Earth", color=colormap("Blues"))
+# plot_asteroid_from_df_row(asteroid; ET_in=ETs)
+plot_body(asteroid; ETs=ETs, color=colormap("Reds"))
+plot_body!(GTOC12.Earth; ETs=ETs, color=colormap("Blues"))
 plot_coast!(x₀⁺, Δt; label="Coast 1", color=colormap("Greens"))
-# plot_coast!(x₀⁺_2, t_transfer2; label="Coast 2", color=colormap("Greens"))
 
-# TODO: Optimize the above for DV
-# TODO: Create an abstract type for both planets and asteroids
-# Since they're both on Keplerian rails, but planets can conduct flybys and asteroids can provide resources
+# TODO: Optimize the above for DV/via Time-of-flight
 
 # TODO: For launch case, just need initial time, not states
-states_out, controls_out, time_out = optimize_impulsive_launch(x₀, x_target, Δt; ΔV₀=ΔV_departure_1, asteroid_ID=ID_min)
+# states_out, controls_out, time_out = optimize_impulsive_launch(x₀, x_target, Δt; ΔV₀=ΔV_departure_1, asteroid_ID=ID_min)
 
