@@ -1,5 +1,5 @@
 
-export optimize_impulsive_transfer, get_Φ, get_lambert_ΔV_and_p⃗
+export optimize_impulsive_transfer, get_Φ, get_lambert_ΔV_and_p⃗, get_primer_vector
 
 # 1. Use autodiff of propagate_universal to get STM
 function get_Φ(x₀, Δt; μ=GTOC12.μ_☉)
@@ -30,7 +30,7 @@ function get_primer_vector(p₀, p_f, Φ_0_to_t, Φ_0_to_f)
     M_t0 = M(Φ_0_to_t)
     M_f0 = M(Φ_0_to_f)
 
-    pₜ = N_t0/N_f0\p_f + [M_t0 - N_t0/N_f0\M_f0]*p₀
+    pₜ = N_t0*inv(N_f0)*p_f + (M_t0 - N_t0*inv(N_f0)*M_f0)*p₀
 end
 
 # Prussing 5.9
@@ -66,13 +66,13 @@ function get_lambert_ΔV_and_p⃗(t0, tf; body_from::CelestialBody, body_to::Cel
 
     # Find Lambert transfer between two positions
     # TODO: Make a lambert type?
-    println("Δt = $Δt")
+    # println("Δt = $Δt")
     v⃗₀⁺, v⃗ = lambert(; r⃗₀=x₀[1:3], r⃗=x_target[1:3], Δt=Δt, tₘ=1) # μ=μ_canonical)
     ΔV₀ = v⃗₀⁺ - x₀[4:6]
     ΔVₜ = x_target[4:6] - v⃗
     x₀⁺ = x₀ + [0;0;0;v⃗₀⁺[:]]
-    println("x₀ = $x₀")
-    println("x₀⁺ = $x₀⁺")
+    # println("x₀ = $x₀")
+    # println("x₀⁺ = $x₀⁺")
 
     # Get STM from Lambert arc
     Φ = get_Φ(x₀⁺, Δt) #; μ=μ_canonical)
@@ -120,7 +120,7 @@ end
 
 scalar_ṗ(p⃗, p⃗̇) = p⃗̇'*p⃗
 
-function optimize_impulsive_transfer(body_from::CelestialBody, body_to::CelestialBody; ET_start, Δt_guess, bound_initial_time=false, bound_final_time=false, tol=1e-8, MAX_ITER=20)
+function optimize_impulsive_transfer(body_from::CelestialBody, body_to::CelestialBody; ET_start, Δt_guess, bound_initial_time=false, bound_final_time=false, tol=1e-8, MAX_ITER=50, α=0.1)
     t0 = 0
     tf = Δt_guess
     ΔV₀, ΔVₜ, p⃗₀, p⃗̇₀, p⃗_f, p⃗̇_f= get_lambert_ΔV_and_p⃗(t0, tf; body_from=body_from, body_to=body_to, ET_start=ET_start)
@@ -130,16 +130,16 @@ function optimize_impulsive_transfer(body_from::CelestialBody, body_to::Celestia
     ṗ₀ = scalar_ṗ(p⃗₀, p⃗̇₀)
     ṗ_f = scalar_ṗ(p⃗_f, p⃗̇_f)
 
-    println("p⃗₀ = $p⃗₀")
-    println("p⃗̇₀ = $p⃗̇₀")
-    println("p⃗_f = $p⃗_f")
-    println("p⃗̇_f = $p⃗̇_f")
+    # println("p⃗₀ = $p⃗₀")
+    # println("p⃗̇₀ = $p⃗̇₀")
+    # println("p⃗_f = $p⃗_f")
+    # println("p⃗̇_f = $p⃗̇_f")
 
 
     num_iter = 0
     while abs(ṗ₀) > tol && abs(ṗ_f) > tol
         J = ΔV₀ + ΔVₜ # total cost
-        print("J = $J")
+        # print("J = $J")
         ∂J_∂t0 = dJ_dt0(t0, tf; body_from=body_from, body_to=body_to, ET_start=ET_start)
         ∂J_∂tf = dJ_dtf(t0, tf; body_from=body_from, body_to=body_to, ET_start=ET_start)
 
@@ -150,15 +150,30 @@ function optimize_impulsive_transfer(body_from::CelestialBody, body_to::Celestia
 
         # ForwardDiff ^ That function call to get the 2nd derivative w.r.t. t0/tf
 
-        # Take a Newton step and update t0 (ET_start + dt0), tf (ET_start + Δt + Δtf)
-        println("t0 = $t0")
-        println("tf = $tf")
+        # # Take a Newton step and update t0 (ET_start + dt0), tf (ET_start + Δt + Δtf)
+        # # println("t0 = $t0")
+        # # println("tf = $tf")
+        # if ṗ₀ > 0
+        #     dt0 = abs(α * norm(J)/∂J_∂t0)
+        # else
+        #     dt0 = -abs(α * norm(J)/∂J_∂t0)
+        # end
+
+        # if ṗ_f > 0
+        #     dtf = abs(α * norm(J)/∂J_∂tf)
+        # else
+        #     dtf = -abs(α * norm(J)/∂J_∂tf)
+        # end
+
+        # t0 += dt0
+        # tf += dtf
+
         partial_newton = 0.1
 
         t0 = newton_step(t0, ∂J_∂t0, ∂2J_dt₀2; newton_step = partial_newton) 
         tf = newton_step(tf, ∂J_∂tf, ∂2J_dtf2; newton_step = partial_newton) 
-        println("t0⁺ = $t0")
-        println("tf⁺ = $tf")
+        # # println("t0⁺ = $t0")
+        # # println("tf⁺ = $tf")
 
         # Resolve for DVs and primer vector values
         ΔV₀, ΔVₜ, p⃗₀, p⃗̇₀, p⃗_f, p⃗̇_f = get_lambert_ΔV_and_p⃗(t0, tf; body_from=body_from, body_to=body_to, ET_start=ET_start)
@@ -166,11 +181,11 @@ function optimize_impulsive_transfer(body_from::CelestialBody, body_to::Celestia
         ṗ_f = scalar_ṗ(p⃗_f, p⃗̇_f)
 
         # Add error for violation of max iterations
-        println("$num_iter")
+        println("Primer vector iteration: $num_iter")
         num_iter = num_iter + 1
         if num_iter > MAX_ITER
-            err = ErrorException("Primer vector Newton Method: Max number of iterations reached in Primer vector Newton Method. Check your units.")
-            throw(err)
+            @warn "Primer vector Newton Method: Max number of iterations reached in Primer vector Newton Method. Check your units."
+            break
         end
     end
 

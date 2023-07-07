@@ -34,21 +34,38 @@ x₀⁺, xₜ = fixed_time_single_shoot(x₀, Δt, r_target; print_iter=false)
 
 #--------------------- Plot Earth/asteroid/spacecraft
 ETs = [ET_start, ET_target]
-plot_body(asteroid; ETs=ETs, color=colormap("Reds"), ratio = 1 )
-plot_body!(GTOC12.Earth; ETs=ETs, color=colormap("Blues"))
-plot_coast!(x₀⁺, Δt; label="Coast 1", color=colormap("Greens"))
+plot_body(asteroid; ETs=ETs, color="red", ratio = 1 )
+plot_body!(GTOC12.Earth; ETs=ETs, color="blue")
+plot_coast!(x₀⁺, Δt; label="Coast 1", color="green")
 
 # Try to optimize burn by adding start/end coast
-ΔV₀⁺, ΔVₜ⁺, t0, tf = optimize_impulsive_transfer(Earth, asteroid; ET_start=ET_start, Δt_guess=Δt, tol=1e-8)
+ΔV₀⁺, ΔVₜ⁺, t0, tf = optimize_impulsive_transfer(Earth, asteroid; ET_start=ET_start, Δt_guess=Δt, bound_initial_time=false, bound_final_time=false, tol=1e-8, MAX_ITER=500, α=0.001)
 
-# Plot optimized transfer
+# Plot time-optimized transfer
 x_adjusted = get_body_state(GTOC12.Earth; ET=ET_start + t0) + [0; 0; 0; ΔV₀⁺[:]]
-plot_coast!(x_adjusted, tf-t0; label="Adjusted Coast 1", color=colormap("Oranges"))
+plot_coast!(x_adjusted, tf-t0; label="Time Adjusted Coast 1", color="orange")
 
-# # Plot primer vector as a function of transfer time
-# times = range(Δt, 1.8*Δt, 100)
-# p_vec = hcat([get_lambert_ΔV_and_p⃗(0, time; body_from=Earth, body_to=asteroid, ET_start=ET_start)[end] for time in times])
 
+# # Further optimize using TrajectoryOptimization
+# x₀ = get_body_state(GTOC12.Earth; ET=ET_start + t0)
+# x_target = get_body_state(asteroid; ET=ET_start + tf)
+# states_out, controls_out, time_out = optimize_impulsive_launch(x₀, x_target, Δt; ΔV₀=ΔV₀, asteroid_ID=ID_min)
+
+# plot_coast!(states_out[1] + [0;0;0;controls_out[1]], tf-t0; label="LQR Adjusted Coast 1", color="magenta")
+
+
+# Plot primer vector as a function of transfer time
+
+
+times = range(t0, tf, 100)
+p_vec = Vector{Vector{Float64}}(undef,100)
+ΔV₀, ΔVₜ, p⃗₀, p⃗̇₀, p⃗_f, p⃗̇_f= get_lambert_ΔV_and_p⃗(t0, tf; body_from=Earth, body_to=asteroid, ET_start=ET_start)
+Φ_0_to_f = get_Φ(x₀, Δt)
+for (i, time) in enumerate(times)
+    Φ_0_to_t = get_Φ(x₀, time)
+    p_vec[i] = get_primer_vector(p⃗₀, p⃗_f, Φ_0_to_t, Φ_0_to_f)
+end
+plot(norm.(p_vec))
 
 # Things to try next:
 # - Non-dimensionalize/use canonical units

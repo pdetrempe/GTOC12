@@ -49,10 +49,10 @@ function optimize_impulsive_launch(x₀, x_target, Δt; ΔV₀=zeros(3), V∞_ma
     # Uh, solve the problem?
     # See options here: https://github.com/RoboticExplorationLab/Altro.jl#list-of-options
     opts = SolverOptions(;
-        penalty_initial=100.0,
-        penalty_scaling=1.0,
-        constraint_tolerance=1e-6,
-        cost_tolerance=1e-6
+        penalty_initial=1e6,
+        penalty_scaling=1e6,
+        constraint_tolerance=1e6,
+        cost_tolerance=1e6
     )
 
     solver = ALTROSolver(prob, opts)
