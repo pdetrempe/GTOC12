@@ -24,6 +24,7 @@ end
 # tₘ is +1 for short way transfers and -1 for long way.
 # TODO: Add Enum for tₘ
 function lambert(; r⃗₀, r⃗, Δt, tₘ, μ=GTOC12.μ_☉, MAX_ITER=50, tol=1e-6)
+    # TODO: Add tₘ switching logic based on orbit periods
 
     # Normalize by canonical units
     CDU = norm(r⃗₀)  # Canonical Distance Unit
