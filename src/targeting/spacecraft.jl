@@ -115,7 +115,9 @@ function RD.dynamics(model::ContinuousSpacecraft, x, u, t)
     # *************************************************
     # exhaust velocity
     c = GTOC12.Isp * GTOC12.g0 # specific impulse and grav accel at sea level (m/s)
-    dm = -GTOC12.T_max/c * δ_star
+    T = norm(u)
+    #dm = -GTOC12.T_max/c * δ_star
+    dm = -T/c * δ_star
 
     # Costate diff eqs
    # p = u, model.μ

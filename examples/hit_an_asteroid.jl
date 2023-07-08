@@ -37,9 +37,44 @@ plot_coast!(x₀⁺, Δt; label="Coast 1", color=colormap("Greens"))
 # TODO: Optimize the above for DV/via Time-of-flight
 
 # TODO: For launch case, just need initial time, not states
-# states_out, controls_out, time_out = optimize_impulsive_launch(x₀, x_target, Δt; ΔV₀=ΔV_departure_1, asteroid_ID=ID_min)
+#states_out, controls_out, time_out = optimize_impulsive_launch(x₀, x_target, Δt; ΔV₀=ΔV_departure_1, asteroid_ID=ID_min)
+
+# Delta V from impulsive 
+  # 1.1632731732968505e-6
+  # 2.408266604131654e-6
+  #-4.037442985551002e-6
+## Mining Ship Mass Constraint
+# m0 = md + mp + I*ms <= 3000 kg
+# m0 = 500kg + mp + 20*40 = 1300kg + mp
+# md = 500 kg, dry mass 
+# mp = prop mass
+# ms = miner mass, 40 kg
+# I = # miners <= 20
 
 
 # Try running continuous burn over this arc
-states_out, controls_out, time_out = optimize_continuous_arc(x₀⁺, x_target, Δt; asteroid_ID=ID_min, m₀=500.0)
+# STates outputted in Cartesian 
+states_out, m_out, controls_out, time_out = optimize_continuous_arc(x₀⁺, x_target, Δt; asteroid_ID=ID_min, m₀=3000.0)
 
+# performance check 
+
+init_state = states_out[1]
+final_state = states_out[end]
+pos_errori = sqrt(sum(x_target[1:3].^2)) - sqrt(sum(init_state[1:3].^2))
+pos_errorf = sqrt(sum(x_target[1:3].^2)) - sqrt(sum(final_state[1:3].^2))
+vel_errori = sqrt(sum(x_target[4:6].^2)) - sqrt(sum(init_state[4:6].^2))
+vel_errorf = sqrt(sum(x_target[4:6].^2)) - sqrt(sum(final_state[4:6].^2))
+
+# reshape state matrix for visualization 
+
+states_out_matrix = mapreduce(permutedims, vcat, states_out)
+
+
+plot(states_out_matrix)
+
+plot(time_out, controls_out[1,:])
+
+
+plot_body(asteroid; ETs=ETs, color=colormap("Reds"))
+plot_body!(GTOC12.Earth; ETs=ETs, color=colormap("Blues"))
+plot_coast!(states_out[1], Δt; label="Coast 1", color=colormap("Greens"))
