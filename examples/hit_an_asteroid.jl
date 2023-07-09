@@ -1,5 +1,6 @@
 using GTOC12
 using Plots
+using LinearAlgebra
 
 # Find asteroid closest (in terms of orbital energy) to the Earth
 _, ID_min = findmin(abs.(GTOC12.asteroid_df.sma / au2m .- 1))
@@ -60,10 +61,10 @@ states_out, m_out, controls_out, time_out = optimize_continuous_arc(x₀⁺, x_t
 
 init_state = states_out[1]
 final_state = states_out[end]
-pos_errori = sqrt(sum(x_target[1:3].^2)) - sqrt(sum(init_state[1:3].^2))
-pos_errorf = sqrt(sum(x_target[1:3].^2)) - sqrt(sum(final_state[1:3].^2))
-vel_errori = sqrt(sum(x_target[4:6].^2)) - sqrt(sum(init_state[4:6].^2))
-vel_errorf = sqrt(sum(x_target[4:6].^2)) - sqrt(sum(final_state[4:6].^2))
+pos_errori = norm(x_target[1:3] - init_state[1:3])
+pos_errorf = norm(x_target[1:3] - final_state[1:3])
+vel_errori = norm(x_target[4:6] - init_state[4:6])
+vel_errorf = norm(x_target[4:6] - final_state[4:6])
 
 # reshape state matrix for visualization 
 
