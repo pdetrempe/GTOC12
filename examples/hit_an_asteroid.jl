@@ -1,5 +1,4 @@
 using GTOC12
-<<<<<<< HEAD
 using SPICE
 using ForwardDiff
 using LinearAlgebra
