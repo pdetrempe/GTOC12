@@ -86,7 +86,7 @@ end
 function bc2!(residual, state, p, t) 
     # u[1] is the beginning of the time span, and u[end] is the ending
     # TODO update params to input p_0, p_f
-    #p_0, p_f = p
+    p_0, p_f = p
     kep_init = get_planet_state("EARTH", GTOC12.ET₀) + [0;0;0;DV₀[:]]
     MEE_init = keplerian2MEE(a=kep_init[1], 
                              e=kep_init[2], 
@@ -138,7 +138,7 @@ plot_planet!(planet="EARTH"; label="Earth", color=colormap("Blues"))
 
 # Try out shooting method to hit asteroid
 
-DV₀ = [-GTOC12.v∞_max; 0; 0]
+DV₀ = [-1000; 0; 3000]
 kep_init = get_planet_state("EARTH", GTOC12.ET₀) + [0;0;0;DV₀[:]]
 MEE_init = keplerian2MEE(a=kep_init[1], 
                          e=kep_init[2], 

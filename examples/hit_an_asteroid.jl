@@ -8,11 +8,11 @@ asteroid = Asteroid(ID_min)
 
 # Try out shooting method to hit asteroid
 furnish_all_kernels()
-DV₀ = [-1000; 0; 0]
+DV₀ = [-1000; 0; 3500]
 x₀ = get_body_state(GTOC12.Earth; ET=GTOC12.ET₀) + [0; 0; 0; DV₀[:]]
 
 # Transfer time
-Δt = 1 / 2 * 365 * 24 * 3600
+Δt = 3/4 * 365 * 24 * 3600
 ΔV∞_max = 6000.0;
 
 # Fixed-time shooting to hit asteroid
@@ -24,7 +24,10 @@ r_target = view(x_target, 1:3)
 # NOTE: This is super brittle to initial conditions
 # TODO: add a Lambert targetter for doing initial guess
 # TODO: do a time sweep of Lambert trajectories to minimize DV
-x₀⁺, xₜ = fixed_time_single_shoot(x₀, Δt, r_target; print_iter=false)
+# v⃗₀, v⃗ = lambert(; r⃗₀=x₀[1:3], r⃗=r_target, Δt, tₘ=1)
+# x₀⁺ = vcat(x₀[1:3], v⃗₀)
+# xₜ = vcat(r_target,v⃗) 
+x₀⁺, xₜ = fixed_time_single_shoot(x₀, Δt, r_target; print_iter=true)
 ΔV_departure_1 = (x₀⁺-x₀)[4:6]
 ΔV_arrival_1 = (xₜ-x_target)[4:6]
 
