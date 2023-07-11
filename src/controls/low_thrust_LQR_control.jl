@@ -1,8 +1,9 @@
 using GTOC12
 using Plots
 using LinearAlgebra
-using OrdinaryDiffEq
+using DifferentialEquations
 using ForwardDiff
+# using BoundaryValueDiffEq
 
 # Find asteroid closest (in terms of orbital energy) to the Earth
 _, ID_min = findmin(abs.(GTOC12.asteroid_df.sma / au2m .- 1.))
@@ -53,28 +54,6 @@ plot_coast!(x₀⁺, Δt; label="Coast 1", color=colormap("Greens"))
 # mp = prop mass
 # ms = miner mass, 40 kg
 # I = # miners <= 20
-
-#----------------- Try Boundary condition version
-function getAB(x)
-    p = x[1];
-    f = x[2];
-    g = x[3];
-    h = x[4];
-    k = x[5];
-    l = x[6]
-    q = 1.0 + f*cos(l) + g*sin(l)
-    s = sqrt(1.0 + h^2 + k^2)
-    A = [0; 0; 0; 0; 0; sqrt(μ*p*(q/p)^2)]
-
-    B = [0                2*p/q*sqrt(p/μ)                0;
-         sqrt(p/μ)*sin(l) sqrt(p/μ)*1.0/q*(q+1)*cos(l)+f  -sqrt(p/μ)*g/q*(h*sin(l)-k*cos(l));
-        -sqrt(p/μ)*cos(l) sqrt(p/μ)*1.0/q*(q+1)*sin(l)+g   sqrt(p/μ)*g/q*(h*sin(l)-k*cos(l));
-         0                0                              sqrt(p/μ)*s*cos(l)/(2*q);
-         0                0                              sqrt(p/μ)*s*sin(l)/(2*q);
-         0                0                              sqrt(p/μ)*1.0/q*(sin(l)-k*cos(l))]
-
-    return A, B
-end
 
 function low_thrust_optimal_control!(dstate, state, p, t)
     # unpack parameters
@@ -155,29 +134,35 @@ function bc2!(residual, state, p, t)
     # u[1] is the beginning of the time span, and u[end] is the ending
     # TODO update params to input p_0, p_f
     x0, xf, μ = p
-    x0, CDU, CTU, μ_canonical = get_canonical_state(x_dimensional; μ=μ)
-    xf = get_canonical_state(xf, CDU; μ=μ_canonical)
-    MEE_init = Cartesian2MEE(x0; μ=μ_canonical)
-    MEE_target = Cartesian2MEE(xf; μ=μ_canonical)
+    # x0, CDU, CTU, μ = get_canonical_state(x0; μ=μ)
+    # xf = get_canonical_state(xf, CDU, CTU)
+    MEE_init = Cartesian2MEE(x0; μ=μ)
+    MEE_target = Cartesian2MEE(xf; μ=μ)
 
+    # Non-dimensionalize state too
+    # x_cartesian_current = MEE2Cartesian(state; μ=μ)
+    # x_cartesian_current = get_canonical_state(x_cartesian_current, CDU, CTU)
+    # MEE_current_canon = Cartesian2MEE(x_cartesian_current; μ=μf)
+    MEE_current_canon = state
     p_0 = MEE_init
     p_f = MEE_target
     # initial boundary value 
     # ***********************************
-    residual[1] = state[1][1] - p_0[1] 
-    residual[2] = state[1][2] - p_0[2] 
-    residual[3] = state[1][3] - p_0[3] 
-    residual[4] = state[1][4] - p_0[4] 
-    residual[5] = state[1][5] - p_0[5] 
-    residual[6] = state[1][6] - p_0[6] 
+    residual[1] = MEE_current_canon[1][1] - p_0[1] 
+    residual[2] = MEE_current_canon[1][2] - p_0[2] 
+    residual[3] = MEE_current_canon[1][3] - p_0[3] 
+    residual[4] = MEE_current_canon[1][4] - p_0[4] 
+    residual[5] = MEE_current_canon[1][5] - p_0[5] 
+    residual[6] = MEE_current_canon[1][6] - p_0[6] 
+    # residual[7] = state[1][7] - m0
     # final boundary value 
     # ***********************************
-    residual[7]  = state[end][1] - p_f[1] 
-    residual[8]  = state[end][2] - p_f[2] 
-    residual[9]  = state[end][3] - p_f[3] 
-    residual[10] = state[end][4] - p_f[4] 
-    residual[11] = state[end][5] - p_f[5] 
-    residual[12] = state[end][6] - p_f[6] 
+    residual[7]  = MEE_current_canon[end][1] - p_f[1] 
+    residual[8]  = MEE_current_canon[end][2] - p_f[2] 
+    residual[9]  = MEE_current_canon[end][3] - p_f[3] 
+    residual[10] = MEE_current_canon[end][4] - p_f[4] 
+    residual[11] = MEE_current_canon[end][5] - p_f[5] 
+    residual[12] = MEE_current_canon[end][6] - p_f[6] 
 end
 
 m = 500.0 # kg
@@ -187,8 +172,10 @@ state_init = vcat(MEE_init, m, ones(6))
 tspan = (0.0,Δt)
 p = (x₀⁺,x_target, μ)
 bvp2 = TwoPointBVProblem(low_thrust_optimal_control!, bc2!, state_init, tspan, p)
-sol2 = solve(bvp2, Vern7()) # we need to use the MIRK4 solver for TwoPointBVProblem
-plot(sol2.u)
+sol2 = solve(bvp2, Shooting(Tsit5()), dt=24*3600.0, abstol=1e-4, reltol=1e-11) # we need to use the MIRK4 solver for TwoPointBVProblem
+# cartesian_solution = MEE2Cartesian.()
+
+MEE_final = Cartesian2MEE(x_target; μ=GTOC12.μ_☉)
 
 
 # # Try running continuous burn over this arc

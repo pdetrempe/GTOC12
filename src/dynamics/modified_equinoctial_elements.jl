@@ -55,30 +55,33 @@ function MEE2Cartesian(MEE; μ=μ_☉)
     """
     p, f, g, h, k, L = MEE
 
-    fhat = zeros(eltype(k), 3)
-    ghat = zeros(eltype(k), 3)
+    # fhat = zeros(eltype(k), 3)
+    # ghat = zeros(eltype(k), 3)
 
-    kk = k^2
-    hh = h^2
-    tkh = 2 * k * h
-    s2 = 1 + hh + kk
-    cL = cos(L)
-    sL = sin(L)
-    w = 1 + f * cL + g * sL
-    r = p / w
-    smp = sqrt(μ / p)
-    fhat[1] = 1 - kk + hh
-    fhat[3] = -2 * k
-    ghat[1] = tkh
-    ghat[2] = 1 + kk - hh
-    fhat[2] = tkh
-    ghat[3] = 2 * h
-    fhat = fhat / s2
-    ghat = ghat / s2
+    kk = k.^2
+    hh = h.^2
+    tkh = 2 .* k .* h
+    s2 = 1 .+ hh .+ kk
+    cL = cos.(L)
+    sL = sin.(L)
+    w = 1 .+ f.* cL .+ g .* sL
+    r = p ./ w
+    smp = sqrt.(μ ./ p)
+    fhat1 = 1 .- kk .+ hh
+    fhat3 = -2 .* k
+    ghat1 = tkh
+    ghat2 = 1 .+ kk .- hh
+    fhat2 = tkh
+    ghat3 = 2 .* h
     x = r * cL
     y = r * sL
-    xdot = -smp * (g + sL)
-    ydot = smp * (f + cL)
+    xdot = -smp .* (g .+ sL)
+    ydot = smp .* (f .+ cL)
+
+    fhat = [fhat1; fhat2; fhat3]
+    ghat = [ghat1; ghat2; ghat3]
+    fhat = fhat ./ s2
+    ghat = ghat ./ s2
 
     r⃗ = x * fhat + y * ghat
     v⃗ = xdot * fhat + ydot * ghat
