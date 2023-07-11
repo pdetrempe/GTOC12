@@ -1,6 +1,6 @@
 using UnPack
 
-export keplerian2MEE, MME2keplerian, MEE2Cartesian, Cartesian2MEE, EOM_MEE!
+export keplerian2MEE, MME2keplerian, MEE2Cartesian, Cartesian2MEE, EOM_MEE!, A_equinoctial, B_equinoctial
 
 ## Intermediate quantities used in MEE calculations
 get_q(; f, g, L) = 1 + f * cos(L) + g * sin(L)

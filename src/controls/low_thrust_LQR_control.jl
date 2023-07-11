@@ -64,7 +64,7 @@ function getAB(x)
     l = x[6]
     q = 1.0 + f*cos(l) + g*sin(l)
     s = sqrt(1.0 + h^2 + k^2)
-    A = [0, 0, 0, 0, 0, sqrt(μ*p*(q/p)^2)]
+    A = [0; 0; 0; 0; 0; sqrt(μ*p*(q/p)^2)]
 
     B = [0                2*p/q*sqrt(p/μ)                0;
          sqrt(p/μ)*sin(l) sqrt(p/μ)*1.0/q*(q+1)*cos(l)+f  -sqrt(p/μ)*g/q*(h*sin(l)-k*cos(l));
@@ -79,16 +79,18 @@ end
 function low_thrust_optimal_control!(dstate, state, p, t)
     # unpack parameters
     # no parameters to unpack at this time, could unpack a_grav here (and T i suppose)?
-    #a_grav, T = p
+    _, _, μ = p
     T = 0.6 # Max Thrust 
-    a_grav = [0.,0.,0.]
 
     # unpack state
     x = state[1:6]; m = state[7]; λ = state[8:13]
 
     # Define A and B matrices (time varying)
     # *************************************************
-    A, B = getAB(x)
+    # A, B = getAB(x)
+    # Solve entire problem in MEEμ
+    A = A_equinoctial(x; μ=μ)
+    B = B_equinoctial(x; μ=μ)
 
     # Optimal Control Strategy 
     # *************************************************
@@ -104,7 +106,7 @@ function low_thrust_optimal_control!(dstate, state, p, t)
 
     # Spacecraft Dynamics 
     # *************************************************
-    dx = A + B*a_grav + T*δ_star/m * B*u_star
+    dx = A + T*δ_star/m * B*u_star
 
     # Mass variation
     # *************************************************
@@ -116,18 +118,34 @@ function low_thrust_optimal_control!(dstate, state, p, t)
     dm = -T/c * δ_star
 
     # Costate diff eqs
-    param = m, λ, δ_star, u_star, a_grav, T 
+    param = m, λ, δ_star, u_star, T, μ 
     dH_dx = ForwardDiff.gradient(x -> calculate_hamiltonian(x, param ), x) #[1:6])
-    dλ = -dH_dx'
+    dλ = -dH_dx
 
-    dstate = [dx, dm, dλ]
+    # println("dλ $dλ")
+    # println("dm $dm")
+    # println("dx $dx")
+    # println("dstate $dstate")
+    dstate[:] = [dx; dm; dλ]
 
 end
 
 function calculate_hamiltonian(x, p) 
-    m, λ, δ_star, u_star, a_grav, T = p
-    A, B = getAB(x)
-    H = T/m*δ_star +    λ'*A    +   λ'*B*(T/m*δ_star*u_star + a_grav)
+    m, λ, δ_star, u_star, T, μ = p
+    # A, B = getAB(x)
+    # Solve entire problem in MEE
+    A = A_equinoctial(x; μ=μ)
+    B = B_equinoctial(x; μ=μ)
+    # println("λ $λ")
+    # println("A $A")
+    # println("B $B")
+    # println("size A = $(size(A))")
+    # println("size λ = $(size(λ))")
+    # println("size B $(size(B))")
+    # println("size u $(size(u_star))")
+    # println("size(λ'*A)  $(size(λ'*A))")
+    # println("size(λ'*B*(T/m*δ_star*u_star)) $(λ'*B*(T/m*δ_star*u_star))")
+    H = T/m*δ_star +    λ'*A    +   λ'*B*(T/m*δ_star*u_star)
     return H
 end
 
@@ -136,9 +154,11 @@ end
 function bc2!(residual, state, p, t) 
     # u[1] is the beginning of the time span, and u[end] is the ending
     # TODO update params to input p_0, p_f
-    x0, xf = p
-    MEE_init = Cartesian2MEE(x0; μ=GTOC12.μ_☉)
-    MEE_target = Cartesian2MEE(xf; μ=GTOC12.μ_☉)
+    x0, xf, μ = p
+    x0, CDU, CTU, μ_canonical = get_canonical_state(x_dimensional; μ=μ)
+    xf = get_canonical_state(xf, CDU; μ=μ_canonical)
+    MEE_init = Cartesian2MEE(x0; μ=μ_canonical)
+    MEE_target = Cartesian2MEE(xf; μ=μ_canonical)
 
     p_0 = MEE_init
     p_f = MEE_target
@@ -163,9 +183,9 @@ end
 m = 500.0 # kg
 μ=GTOC12.μ_☉
 MEE_init = Cartesian2MEE(x₀⁺; μ=GTOC12.μ_☉)
-state_init = vcat(MEE_init, m, zeros(6))
+state_init = vcat(MEE_init, m, ones(6))
 tspan = (0.0,Δt)
-p = (x₀⁺,x_target)
+p = (x₀⁺,x_target, μ)
 bvp2 = TwoPointBVProblem(low_thrust_optimal_control!, bc2!, state_init, tspan, p)
 sol2 = solve(bvp2, Vern7()) # we need to use the MIRK4 solver for TwoPointBVProblem
 plot(sol2.u)
