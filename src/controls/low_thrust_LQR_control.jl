@@ -58,7 +58,7 @@ plot_coast!(x₀⁺, Δt; label="Coast 1", color=colormap("Greens"))
 function low_thrust_optimal_control!(dstate, state, p, t)
     # unpack parameters
     # no parameters to unpack at this time, could unpack a_grav here (and T i suppose)?
-    _, _, μ = p
+    _, _, _, μ = p
     T = 0.6 # Max Thrust 
 
     # unpack state
@@ -133,7 +133,7 @@ end
 function bc2!(residual, state, p, t) 
     # u[1] is the beginning of the time span, and u[end] is the ending
     # TODO update params to input p_0, p_f
-    x0, xf, μ = p
+    x0, m0, xf, μ = p
     # x0, CDU, CTU, μ = get_canonical_state(x0; μ=μ)
     # xf = get_canonical_state(xf, CDU, CTU)
     MEE_init = Cartesian2MEE(x0; μ=μ)
@@ -154,7 +154,7 @@ function bc2!(residual, state, p, t)
     residual[4] = MEE_current_canon[1][4] - p_0[4] 
     residual[5] = MEE_current_canon[1][5] - p_0[5] 
     residual[6] = MEE_current_canon[1][6] - p_0[6] 
-    # residual[7] = state[1][7] - m0
+    residual[7] = state[1][7] - m0
     # final boundary value 
     # ***********************************
     residual[7]  = MEE_current_canon[end][1] - p_f[1] 
@@ -170,9 +170,9 @@ m = 500.0 # kg
 MEE_init = Cartesian2MEE(x₀⁺; μ=GTOC12.μ_☉)
 state_init = vcat(MEE_init, m, ones(6))
 tspan = (0.0,Δt)
-p = (x₀⁺,x_target, μ)
+p = (x₀⁺, m, x_target, μ)
 bvp2 = TwoPointBVProblem(low_thrust_optimal_control!, bc2!, state_init, tspan, p)
-sol2 = solve(bvp2, Shooting(Tsit5()), dt=24*3600.0, abstol=1e-4, reltol=1e-11) # we need to use the MIRK4 solver for TwoPointBVProblem
+sol2 = solve(bvp2, Shooting(Tsit5()), dt=24*3600.0, abstol=1e-4, reltol=1e-10) # we need to use the MIRK4 solver for TwoPointBVProblem
 # cartesian_solution = MEE2Cartesian.()
 
 MEE_final = Cartesian2MEE(x_target; μ=GTOC12.μ_☉)
