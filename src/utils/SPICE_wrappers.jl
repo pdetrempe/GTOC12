@@ -35,13 +35,22 @@ function furnish_all_kernels()
 end 
 
 # Wrap SPICE calls
-function get_planet_state(planet, ET)
-    # Use SPICE to get position
-    ref = "ECLIPJ2000"
-    abcorr = "NONE"
-    obs = GTOC12.default_CB_str
-
-    # TODO: Use SPICE Int IDs instead of string
-    r_planet = spkezr(uppercase(planet), ET, ref, abcorr, uppercase(obs))[1]
+function get_planet_state(
+    planet::Union{String,Int}, 
+    ET::AbstractFloat; 
+    ref_frame::String=default_ref_frame, 
+    observer::Union{String,Int}=default_CB_idx
+    )
+    _planet = if planet isa AbstractString
+        bodn2c(planet)
+    elseif planet isa Integer
+        planet
+    end
+    _observer = if observer isa AbstractString
+        bodn2c(observer)
+    elseif observer isa Integer
+        observer
+    end
+    r_planet = spkgeo(_planet, ET, ref_frame, _observer)[1]
     r_planet *= 1000 # km → m
 end
