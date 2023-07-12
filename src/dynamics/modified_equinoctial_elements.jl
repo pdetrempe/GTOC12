@@ -54,6 +54,7 @@ function MEE2Cartesian(MEE; μ=μ_☉)
     https://github.com/jacobwilliams/Fortran-Astrodynamics-Toolkit/blob/master/src/modified_equinoctial_module.f90
     """
     p, f, g, h, k, L = MEE
+    p = abs(p)
 
     # fhat = zeros(eltype(k), 3)
     # ghat = zeros(eltype(k), 3)
@@ -66,7 +67,7 @@ function MEE2Cartesian(MEE; μ=μ_☉)
     sL = sin.(L)
     w = 1 .+ f.* cL .+ g .* sL
     r = p ./ w
-    smp = sqrt.(μ ./ p)
+    smp = sqrt.(μ ./ abs(p))
     fhat1 = 1 .- kk .+ hh
     fhat3 = -2 .* k
     ghat1 = tkh
@@ -141,6 +142,7 @@ function A_equinoctial(MEE; μ)
 
     p, f, g, h, k, l = MEE
     q = get_q(f=f, g=g, L=l)
+    p = abs(p)
 
     A = [0; 0; 0; 0; 0; sqrt(μ * p) * (q / p)^2]
 end
@@ -154,6 +156,7 @@ function B_equinoctial(MEE; μ)
     p, f, g, h, k, l = MEE
     q = get_q(f=f, g=g, L=l)
     s = get_s(h=h, k=k)
+    p = abs(p)
 
     B = [0 2*p/q*sqrt(p / μ) 0
         sqrt(p / μ)*sin(l) sqrt(p / μ)*q*((q+1)*cos(l)+f) -sqrt(p / μ)*g/q*(h*sin(l)-k*cos(l))

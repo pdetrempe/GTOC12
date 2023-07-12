@@ -1,6 +1,6 @@
 using DifferentialEquations
 
-export calculation_continuous_burn_arc, low_thrust_optimal_control!, bc2!, calculate_hamiltonian
+export calculate_rendezvous, calculate_intercept, low_thrust_optimal_control!, bc_rendezvous!, calculate_hamiltonian
 
 
 function calculate_hamiltonian(x, p)
@@ -60,7 +60,7 @@ function low_thrust_optimal_control!(dstate, state, p, t)
 
 end
 
-function bc2!(residual, state, p, t)
+function bc_rendezvous!(residual, state, p, t)
     # u[1] is the beginning of the time span, and u[end] is the ending
     x0, m0, xf, μ, _, _ = p
     MEE_init = Cartesian2MEE(x0; μ=μ)
@@ -89,9 +89,51 @@ function bc2!(residual, state, p, t)
     residual[12] = MEE_current_canon[end][6] - p_f[6]
 end
 
+function bc_intercept!(residual, state, p, t)
+    # u[1] is the beginning of the time span, and u[end] is the ending
+    x0, m0, rf, μ, _, _ = p
+    MEE_init = Cartesian2MEE(x0; μ=μ)
+    MEE_current_canon = state
+    MEE_current_end = state[end]
+    x_end_canon = MEE2Cartesian(MEE_current_end[1:6]; μ=μ)
 
-function calculation_continuous_burn_arc(x0, xf, Δt; m0, μ=GTOC12.μ_☉, dt=24*3600, abstol=1e-6, reltol=1e-10)
+    # Initial/final boundary conditions
+    p_0 = MEE_init
+    p_f = rf
+
+    # initial boundary value 
+    # ***********************************
+    residual[1] = MEE_current_canon[1][1] - p_0[1]
+    residual[2] = MEE_current_canon[1][2] - p_0[2]
+    residual[3] = MEE_current_canon[1][3] - p_0[3]
+    residual[4] = MEE_current_canon[1][4] - p_0[4]
+    residual[5] = MEE_current_canon[1][5] - p_0[5]
+    residual[6] = MEE_current_canon[1][6] - p_0[6]
+    residual[7] = state[1][7] - m0 # This mass IC doesn't seem to affect the outcome
+
+    # final boundary value 
+    # ***********************************
+    residual[7] = x_end_canon[1] - p_f[1]
+    residual[8] = x_end_canon[2] - p_f[2]
+    residual[9] = x_end_canon[3] - p_f[3]
+
+end
+
+
+function calculate_rendezvous(x0, xf, Δt; m0, μ=GTOC12.μ_☉, dt=24*3600, abstol=1e-6, reltol=1e-10)
     # Largely a wrapper for the DifferentialEquations.jl 2-point BVP
+    solve_bvp(x0, xf, Δt; boundary_condition=bc_rendezvous!, m0=m0, μ=μ, dt=dt, abstol=abstol, reltol=reltol)
+
+end
+
+function calculate_intercept(x0, xf, Δt; m0, μ=GTOC12.μ_☉, dt=24*3600, abstol=1e-6, reltol=1e-10)
+    # Largely a wrapper for the DifferentialEquations.jl 2-point BVP
+    solve_bvp(x0, xf, Δt; boundary_condition=bc_intercept!, m0=m0, μ=μ, dt=dt, abstol=abstol, reltol=reltol)
+
+end
+
+# Wrapper for boundary value problem with different conditions
+function solve_bvp(x0, xf, Δt; boundary_condition, m0, μ=GTOC12.μ_☉, dt=24*3600, abstol=1e-6, reltol=1e-10)
 
     # Non-dimensionalize problem
     x0_canon, CDU, CTU, μ_canonical = get_canonical_state(x0; μ=μ)
@@ -104,7 +146,7 @@ function calculation_continuous_burn_arc(x0, xf, Δt; m0, μ=GTOC12.μ_☉, dt=2
     
     # Pack up parameters and solve
     p = (x0_canon, m0, xf_canon, μ_canonical, CDU, CTU)
-    bvp2 = TwoPointBVProblem(low_thrust_optimal_control!, bc2!, state_init, tspan, p)
+    bvp2 = TwoPointBVProblem(low_thrust_optimal_control!, boundary_condition, state_init, tspan, p)
     sol = solve(bvp2, Shooting(Vern7()), dt=dt, abstol=abstol, reltol=reltol) # we need to use the MIRK4 solver for TwoPointBVProblem
     
     # Redimensionalize problem
