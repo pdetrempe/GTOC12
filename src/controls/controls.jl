@@ -1,4 +1,6 @@
-export low_thrust_optimal_control!, bc2!, calculate_hamiltonian
+using DifferentialEquations
+
+export calculation_continuous_burn_arc, low_thrust_optimal_control!, bc2!, calculate_hamiltonian
 
 
 function calculate_hamiltonian(x, p)
@@ -85,4 +87,29 @@ function bc2!(residual, state, p, t)
     residual[10] = MEE_current_canon[end][4] - p_f[4]
     residual[11] = MEE_current_canon[end][5] - p_f[5]
     residual[12] = MEE_current_canon[end][6] - p_f[6]
+end
+
+
+function calculation_continuous_burn_arc(x0, xf, Δt; m0, μ=GTOC12.μ_☉, dt=24*3600, abstol=1e-6, reltol=1e-10)
+    # Largely a wrapper for the DifferentialEquations.jl 2-point BVP
+
+    # Non-dimensionalize problem
+    x0_canon, CDU, CTU, μ_canonical = get_canonical_state(x0; μ=μ)
+    xf_canon = get_canonical_state(xf, CDU, CTU)
+    MEE_init = Cartesian2MEE(x0_canon; μ=μ_canonical)
+    
+    state_init = vcat(MEE_init, m0, ones(6))
+    tspan = canonical_time.((0.0, Δt); CTU=CTU)
+    dt = canonical_time(dt; CTU=CTU)
+    
+    # Pack up parameters and solve
+    p = (x0_canon, m0, xf_canon, μ_canonical, CDU, CTU)
+    bvp2 = TwoPointBVProblem(low_thrust_optimal_control!, bc2!, state_init, tspan, p)
+    sol = solve(bvp2, Shooting(Vern7()), dt=dt, abstol=abstol, reltol=reltol) # we need to use the MIRK4 solver for TwoPointBVProblem
+    
+    # Redimensionalize problem
+    MEE_out = hcat([state[1:6] for state in sol.u])
+    x_spacecraft = MEE2Cartesian.(MEE_out; μ=μ_canonical)
+    redimensionalize_state!.(x_spacecraft; CDU=CDU, CTU=CTU)
+    return x_spacecraft
 end

@@ -1,9 +1,7 @@
 using GTOC12
 using Plots
 using LinearAlgebra
-using DifferentialEquations
-using ForwardDiff
-# using BoundaryValueDiffEq
+
 
 # Find asteroid closest (in terms of orbital energy) to the Earth
 _, ID_min = findmin(abs.(GTOC12.asteroid_df.sma / au2m .- 1.0))
@@ -43,24 +41,7 @@ plot_coast!(x₀⁺, Δt; label="Coast 1", color="Green")
 
 m = 500.0 # kg
 
-# Non-dimensionalize problem
-x0_canon, CDU, CTU, μ_canonical = get_canonical_state(x₀⁺; μ=GTOC12.μ_☉)
-xf_canon = get_canonical_state(x_target, CDU, CTU)
-MEE_init = Cartesian2MEE(x0_canon; μ=μ_canonical)
-
-state_init = vcat(MEE_init, m, ones(6))
-tspan = canonical_time.((0.0, Δt); CTU=CTU)
-dt = canonical_time(24 * 3600.0; CTU=CTU)
-
-# Pack up parameters and solve
-p = (x0_canon, m, xf_canon, μ_canonical, CDU, CTU)
-bvp2 = TwoPointBVProblem(low_thrust_optimal_control!, bc2!, state_init, tspan, p)
-sol = solve(bvp2, Shooting(Vern7()), dt=dt, abstol=1e-6, reltol=1e-10) # we need to use the MIRK4 solver for TwoPointBVProblem
-
-# Redimensionalize problem
-MEE_out = hcat([state[1:6] for state in sol.u])
-x_spacecraft = MEE2Cartesian.(MEE_out; μ=μ_canonical)
-redimensionalize_state!.(x_spacecraft; CDU=CDU, CTU=CTU)
+x_spacecraft = calculation_continuous_burn_arc(x₀⁺, x_target, Δt; m0=m, μ=GTOC12.μ_☉, dt=24*3600)
 r_spacecraft = getindex.(x_spacecraft', 1:3)'
 
 # Plot solution alongside coasts

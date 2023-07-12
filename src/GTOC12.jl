@@ -8,7 +8,7 @@ module GTOC12
     using RobotDynamics
     using Altro
     using TrajectoryOptimization
-
+    using OrdinaryDiffEq
 
     # File paths
     const PROBLEM_DATA = joinpath(@__DIR__, "../problem")
