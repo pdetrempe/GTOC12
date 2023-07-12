@@ -33,7 +33,15 @@ x₀⁺, xₜ = fixed_time_single_shoot(x₀, Δt, r_target; print_iter=true)
 # Initialize Mining Ship
 mining_ship = GTOC12.Mining_Ship()
 
-line_array = GTOC12.record_line("launch", x₀, x₀⁺, GTOC12.ET₀, mining_ship, 0.0)
+line_array = []
+line_array = GTOC12.record_line(line_array, "launch", x₀, x₀⁺, GTOC12.ET₀, mining_ship, 0.0)
+
+# write lines to txt file
+file = open("output.txt", "w")
+for line in line_array
+    write(file, line)
+end
+close(file)
 
 
 # hit an asteroid 
