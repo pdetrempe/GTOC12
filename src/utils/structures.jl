@@ -26,11 +26,11 @@ mutable struct Mining_Ship
     function Mining_Ship(;
         ship_ID = 1,
         miner_count = 20,                                   # (cnt)
-        miners_onboard = [miner() for i in 1:miner_count],  # (-)
+        miners_onboard = [GTOC12.asteroid_miner() for i in 1:miner_count],  # (-)
         mass_dry = 500.,                                    # (kg) 
         mass_wet = 1300.,                                   # (kg)
         mass_collected = 0.0,                               # (kg)
-        mass_total = sum([m for miners_onboard[i] for i in 1:miner_count]) + mass_collected + mass_dry + mass_wet ,  # (kg)
+        mass_total = sum([miners_onboard[i].mass for i in 1:miner_count]) + mass_collected + mass_dry + mass_wet,  # (kg)
         current_state = zeros(6),                           # [r, v]
         )
         new(ship_ID, miner_count, miners_onboard, mass_dry, mass_wet, mass_collected, mass_total, current_state)

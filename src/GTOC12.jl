@@ -25,10 +25,13 @@ module GTOC12
     include("utils/SPICE_wrappers.jl")
     include("utils/constants.jl")
     include("utils/celestial_body.jl")
+    include("utils/data_recording_functions.jl")
     include("utils/asteroids.jl")
     include("utils/planets.jl")
     include("utils/defaults.jl")
     include("utils/helper_functions.jl")
+    include("utils/mining_functions.jl")
+    include("utils/structures.jl")
 
     # Targeters, Optimizers, and Controllers
     include("targeting/targeting.jl")
