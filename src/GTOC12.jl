@@ -8,7 +8,7 @@ module GTOC12
     using RobotDynamics
     using Altro
     using TrajectoryOptimization
-
+    using OrdinaryDiffEq
 
     # File paths
     const PROBLEM_DATA = joinpath(@__DIR__, "../problem")
@@ -30,12 +30,13 @@ module GTOC12
     include("utils/defaults.jl")
     include("utils/helper_functions.jl")
 
-    # Targeters and Optimizers
+    # Targeters, Optimizers, and Controllers
     include("targeting/targeting.jl")
     include("targeting/lambert_solver.jl")
     include("targeting/spacecraft.jl")
     include("optimization/optimization.jl")
     include("dynamics/primer_vector.jl")
+    include("controls/controls.jl")
 
     # Plotting
     include("plotting/plotting.jl")

@@ -1,4 +1,6 @@
-export optimize_impulsive_launch
+using OrdinaryDiffEq, Altro
+
+export optimize_impulsive_launch, optimize_continuous_arc
 
 ## Problem definition
 # TODO: Make a type that has passthrough calls to the methods already in Altro.jl
@@ -56,7 +58,8 @@ function optimize_impulsive_launch(x₀, x_target, Δt; ΔV₀=zeros(3), V∞_ma
     )
 
     solver = ALTROSolver(prob, opts)
-    solve!(solver)
+    Altro.solve!(solver)
+    #solve!(solver)
 
     # Extract states and controls
     states_out = states(prob)
@@ -73,4 +76,107 @@ function optimize_impulsive_launch(x₀, x_target, Δt; ΔV₀=zeros(3), V∞_ma
     times_out = redimensionalize_time.(times_out; CTU=CTU)
 
     return states_out, controls_out, times_out
+end
+
+# TODO: Make a type that has passthrough calls to the methods already in Altro.jl
+function optimize_continuous_arc(x₀, x_target, Δt; ET_launch=GTOC12.ET₀,
+     asteroid_ID, m₀, N=1000) #, Qf= Diagonal(@SVector zeros(6)))
+    # Problem scaling via canonical units (this makes the solver not hate you)
+    x₀, CDU, CTU, μ_canonical = get_canonical_state(x₀; μ=GTOC12.μ_☉)
+    canonical_state!(x_target; CDU=CDU, CTU=CTU)
+    Δt = canonical_time(Δt; CTU)
+    T_max = GTOC12.T_max / (CDU/CTU^2) # Non-dimensionalize thruster force
+
+    # Model and discretization
+    target_asteroid = Asteroid(asteroid_ID)
+    model = ContinuousSpacecraft(ET_launch=ET_launch, target_asteroid=target_asteroid, μ=μ_canonical)
+    n, m = RD.dims(model)
+    tf = Δt  # final time (sec)
+    #N = 1000          # number of knot points, 2 for simple start/end impulses
+    dt = tf / (N - 1)  # time step (sec)
+    tspan = (0, tf)
+    times = 0:dt:tf
+
+    # Objective
+    # Note: May have to tune on a segment-by-segment basis
+    x0 = SVector{length(x₀)}(x₀)# initial state
+    MEE₀ = Cartesian2MEE(x0; μ=μ_canonical)
+    xf = SVector{length(x_target)}(x_target) # final state
+    MEE_f = Cartesian2MEE(xf; μ=μ_canonical)
+    λ₀ = zeros(6)
+    xf_aug = SVector{n}(vcat(MEE_f,m₀)) #,λ₀ ))
+
+    # Set up costs.
+    # TODO: Convert costs to just Σ(ΔV)
+    Q = Diagonal(@SVector zeros(n))         # Don't penalize intermediate states at all.
+    R = 1 * Diagonal(@SVector ones(m))  # Penalize all control states
+    Qf = Diagonal(@SVector zeros(n))  # Don't penalize final states (do so by goal constraint)
+    #Qf = Diagonal(@SVector ones(n))  # Don't penalize final states (do so by goal constraint)
+    obj = LQRObjective(Q, R, Qf, xf_aug, N)
+
+    # Add constraints
+    conSet = ConstraintList(n, m, N)
+    add_constraint!(conSet, GoalConstraint(xf_aug, 1:6), N) # Just constrain the position and vel at the end
+    bnd = BoundConstraint(n, m, u_min=-T_max, u_max=T_max) # Limit to problem max thrust
+    add_constraint!(conSet, bnd, 1:N-1)
+    # TODO at some sort of velocity constraint to meet the necessary vel requirement for rendezvous? 
+
+    # # Initial guess
+    # # Use DifferentialEquations to get controls at all points on roll out using MEE dynamics
+    # parameters = μ_canonical
+    # println("tspan $tspan")
+    # println("times $times")
+    # prob = ODEProblem(EOM_MEE_opt_control!, vcat(MEE₀, m₀, λ₀), tspan, parameters)
+    # sol = solve(prob, Vern7(), saveat=times, alg_hints = [:stiff], reltol = 1e-10, abstol = 1e-6)
+
+    # Sweep through all MEE along trajectory and store, then solve for initial controls
+    # MEE2keplerian(MEE₀)
+
+    # This should be good enough to start with:
+    fast_variables = range(MEE₀[end], MEE_f[end], length=N)
+
+    #U0 = [get_opt_control_from_state(model::ContinuousSpacecraft, [MEE₀[1:5]; fast_var; m₀; λ₀[:]]) for fast_var in fast_variables]
+    #U0 = [0.0, 0.0, 0.0]
+    U0 = [fill(0.001, m) for k = 1:N-1]
+    #println(U0)
+
+    # Set up problem
+    prob = Problem(model, obj, vcat(MEE₀, m₀), tf, xf=vcat(MEE_f, m₀), constraints=conSet)
+    #prob = Problem(model, obj, vcat(MEE₀, m₀, λ₀), tf, xf=vcat(MEE_f, m₀, λ₀), constraints=conSet)
+    initial_controls!(prob, U0)
+    rollout!(RD.InPlace(), prob)
+
+
+    # Uh, solve the problem?
+    # See options here: https://github.com/RoboticExplorationLab/Altro.jl#list-of-options
+    opts = SolverOptions(;
+        penalty_initial=1e6,
+        penalty_scaling=1e6,
+        constraint_tolerance=1e6,
+        cost_tolerance=1e6
+    )
+
+    solver = ALTROSolver(prob, opts)
+    Altro.solve!(solver)
+
+    # Extract states and controls
+    states_out = states(prob)
+    controls_out = controls(prob)
+    times_out = gettimes(prob)
+
+    # Redimensionalize input states InPlace
+    redimensionalize_state!(x_target; CDU=CDU, CTU=CTU)
+
+    # Convert states out back to Cartesian coordinates
+    x_cartesian_out = hcat([MEE2Cartesian(MEE[1:6]; μ=μ_canonical) for MEE in states_out])
+
+    # output mass 
+    m_out = hcat([mass[7] for mass in states_out])
+
+    # Redimensionalize output based on canonical units
+    redimensionalize_state!.(x_cartesian_out; CDU=CDU, CTU=CTU)
+    controls_out *= (CDU/CTU^2) # Redimensionalize thrust control
+    times_out = redimensionalize_time.(times_out; CTU=CTU)
+
+    return x_cartesian_out, m_out, controls_out, times_out
 end
