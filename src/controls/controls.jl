@@ -16,7 +16,7 @@ end
 function low_thrust_optimal_control!(dstate, state, p, t)
     # unpack parameters
     _, _, _, μ, CDU, CTU = p
-    T = GTOC12.T_max/(CDU/CTU^2) # Max Thrust (kg-m/s^2). Non-dimensionalize
+    T = GTOC12.T_max / (CDU / CTU^2) # Max Thrust (kg-m/s^2). Non-dimensionalize
 
     # unpack state
     x = state[1:6]
@@ -46,10 +46,14 @@ function low_thrust_optimal_control!(dstate, state, p, t)
     # Mass variation
     # *************************************************
     # exhaust velocity
-    g0 = GTOC12.g0/(CDU/CTU^2)    # m/s^2, non-dimensionalize
+    g0 = GTOC12.g0 / (CDU / CTU^2)    # m/s^2, non-dimensionalize
     Isp = canonical_time(GTOC12.Isp; CTU=CTU)  # seconds
     c = Isp * g0 # specific impulse and grav accel at sea level (m/s)
-    dm = -T / c * δ_star
+
+    # Do ṁ calculations using dimensional units
+    c_dim = GTOC12.Isp * GTOC12.g0
+    dm = -GTOC12.T_max / c_dim * δ_star
+    
 
     # Costate diff eqs
     param = m, λ, δ_star, u_star, T, μ
@@ -77,7 +81,6 @@ function bc_rendezvous!(residual, state, p, t)
     residual[4] = MEE_current_canon[1][4] - p_0[4]
     residual[5] = MEE_current_canon[1][5] - p_0[5]
     residual[6] = MEE_current_canon[1][6] - p_0[6]
-    residual[7] = state[1][7] - m0 # This mass IC doesn't seem to affect the outcome
 
     # final boundary value 
     # ***********************************
@@ -87,6 +90,11 @@ function bc_rendezvous!(residual, state, p, t)
     residual[10] = MEE_current_canon[end][4] - p_f[4]
     residual[11] = MEE_current_canon[end][5] - p_f[5]
     residual[12] = MEE_current_canon[end][6] - p_f[6]
+
+    # Initial mass constraint
+    # ***********************************
+    residual[13] = (state[1][7] - m0)
+
 end
 
 function bc_intercept!(residual, state, p, t)
@@ -117,41 +125,45 @@ function bc_intercept!(residual, state, p, t)
     residual[8] = x_end_canon[2] - p_f[2]
     residual[9] = x_end_canon[3] - p_f[3]
 
+    # Initial mass constraint
+    # ***********************************
+    residual[13] = (state[1][7] - m0)
+
 end
 
 
-function calculate_rendezvous(x0, xf, Δt; m0, μ=GTOC12.μ_☉, dt=24*3600, abstol=1e-6, reltol=1e-10)
+function calculate_rendezvous(x0, xf, Δt; m0, μ=GTOC12.μ_☉, dt=24 * 3600, abstol=1e-6, reltol=1e-10)
     # Largely a wrapper for the DifferentialEquations.jl 2-point BVP
     solve_bvp(x0, xf, Δt; boundary_condition=bc_rendezvous!, m0=m0, μ=μ, dt=dt, abstol=abstol, reltol=reltol)
 
 end
 
-function calculate_intercept(x0, xf, Δt; m0, μ=GTOC12.μ_☉, dt=24*3600, abstol=1e-6, reltol=1e-10)
+function calculate_intercept(x0, xf, Δt; m0, μ=GTOC12.μ_☉, dt=24 * 3600, abstol=1e-6, reltol=1e-10)
     # Largely a wrapper for the DifferentialEquations.jl 2-point BVP
     solve_bvp(x0, xf, Δt; boundary_condition=bc_intercept!, m0=m0, μ=μ, dt=dt, abstol=abstol, reltol=reltol)
 
 end
 
 # Wrapper for boundary value problem with different conditions
-function solve_bvp(x0, xf, Δt; boundary_condition, m0, μ=GTOC12.μ_☉, dt=24*3600, abstol=1e-6, reltol=1e-10)
+function solve_bvp(x0, xf, Δt; boundary_condition, m0, μ=GTOC12.μ_☉, dt=24 * 3600, abstol=1e-6, reltol=1e-10)
 
     # Non-dimensionalize problem
     x0_canon, CDU, CTU, μ_canonical = get_canonical_state(x0; μ=μ)
     xf_canon = get_canonical_state(xf, CDU, CTU)
     MEE_init = Cartesian2MEE(x0_canon; μ=μ_canonical)
-    
+
     state_init = vcat(MEE_init, m0, ones(6))
     tspan = canonical_time.((0.0, Δt); CTU=CTU)
     dt = canonical_time(dt; CTU=CTU)
-    
+
     # Pack up parameters and solve
     p = (x0_canon, m0, xf_canon, μ_canonical, CDU, CTU)
     bvp2 = TwoPointBVProblem(low_thrust_optimal_control!, boundary_condition, state_init, tspan, p)
     sol = solve(bvp2, Shooting(Vern7()), dt=dt, abstol=abstol, reltol=reltol) # we need to use the MIRK4 solver for TwoPointBVProblem
-    
+
     # Redimensionalize problem
     MEE_out = hcat([state[1:6] for state in sol.u])
     x_spacecraft = MEE2Cartesian.(MEE_out; μ=μ_canonical)
     redimensionalize_state!.(x_spacecraft; CDU=CDU, CTU=CTU)
-    return x_spacecraft
+    return x_spacecraft, sol
 end
