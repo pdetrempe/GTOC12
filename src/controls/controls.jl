@@ -1,4 +1,4 @@
-using DifferentialEquations
+using DifferentialEquations: TwoPointBVProblem, Shooting, Vern7, solve
 
 export calculate_rendezvous, calculate_intercept, low_thrust_optimal_control!, bc_rendezvous!, calculate_hamiltonian
 
@@ -19,9 +19,9 @@ function low_thrust_optimal_control!(dstate, state, p, t)
     T = GTOC12.T_max / (CDU / CTU^2) # Max Thrust (kg-m/s^2). Non-dimensionalize
 
     # unpack state
-    x = state[1:6]
+    x = view(state, 1:6)
     m = state[7]
-    λ = state[8:13]
+    λ = view(state, 8:13)
 
     # Define A and B matrices (time varying)
     # *************************************************
@@ -57,11 +57,19 @@ function low_thrust_optimal_control!(dstate, state, p, t)
 
     # Costate diff eqs
     param = m, λ, δ_star, u_star, T, μ
-    dH_dx = ForwardDiff.gradient(x -> calculate_hamiltonian(x, param), x)
+
+    # Try speeding up using in-place ForwardDiff
+    dH_dx = zeros(6) # where we'll be storing our results
+    f = x -> calculate_hamiltonian(x, param)
+    config = ForwardDiff.GradientConfig(f, x)
+    ForwardDiff.gradient!(dH_dx, f, x, config)
+    # dH_dx = ForwardDiff.gradient(x -> calculate_hamiltonian(x, param), x)
     dλ = -dH_dx
 
-    dstate[:] = [dx; dm; dλ]
-
+    dstate[1:6] = dx
+    dstate[7] = dm
+    dstate[8:13] = dλ
+    nothing
 end
 
 function bc_rendezvous!(residual, state, p, t)
@@ -117,7 +125,6 @@ function bc_intercept!(residual, state, p, t)
     residual[4] = MEE_current_canon[1][4] - p_0[4]
     residual[5] = MEE_current_canon[1][5] - p_0[5]
     residual[6] = MEE_current_canon[1][6] - p_0[6]
-    residual[7] = state[1][7] - m0 # This mass IC doesn't seem to affect the outcome
 
     # final boundary value 
     # ***********************************
@@ -127,25 +134,25 @@ function bc_intercept!(residual, state, p, t)
 
     # Initial mass constraint
     # ***********************************
-    residual[13] = (state[1][7] - m0)
-
+    residual[13] = state[1][7] - m0
+    nothing
 end
 
 
-function calculate_rendezvous(x0, xf, Δt; m0, μ=GTOC12.μ_☉, dt=24 * 3600, abstol=1e-6, reltol=1e-10)
+function calculate_rendezvous(x0, xf, Δt; m0, μ=GTOC12.μ_☉, dt=24 * 3600, abstol=1e-6, reltol=1e-10, kwargs...)
     # Largely a wrapper for the DifferentialEquations.jl 2-point BVP
-    solve_bvp(x0, xf, Δt; boundary_condition=bc_rendezvous!, m0=m0, μ=μ, dt=dt, abstol=abstol, reltol=reltol)
+    solve_bvp(x0, xf, Δt; boundary_condition=bc_rendezvous!, m0=m0, μ=μ, dt=dt, abstol=abstol, reltol=reltol, kwargs...)
 
 end
 
-function calculate_intercept(x0, xf, Δt; m0, μ=GTOC12.μ_☉, dt=24 * 3600, abstol=1e-6, reltol=1e-10)
+function calculate_intercept(x0, xf, Δt; m0, μ=GTOC12.μ_☉, dt=24 * 3600, abstol=1e-6, reltol=1e-10, kwargs...)
     # Largely a wrapper for the DifferentialEquations.jl 2-point BVP
-    solve_bvp(x0, xf, Δt; boundary_condition=bc_intercept!, m0=m0, μ=μ, dt=dt, abstol=abstol, reltol=reltol)
+    solve_bvp(x0, xf, Δt; boundary_condition=bc_intercept!, m0=m0, μ=μ, dt=dt, abstol=abstol, reltol=reltol, kwargs...)
 
 end
 
 # Wrapper for boundary value problem with different conditions
-function solve_bvp(x0, xf, Δt; boundary_condition, m0, μ=GTOC12.μ_☉, dt=24 * 3600, abstol=1e-6, reltol=1e-10)
+function solve_bvp(x0, xf, Δt; boundary_condition, m0, μ=GTOC12.μ_☉, dt=24 * 3600, abstol=1e-6, reltol=1e-10, kwargs...)
 
     # Non-dimensionalize problem
     x0_canon, CDU, CTU, μ_canonical = get_canonical_state(x0; μ=μ)
@@ -159,7 +166,7 @@ function solve_bvp(x0, xf, Δt; boundary_condition, m0, μ=GTOC12.μ_☉, dt=24 
     # Pack up parameters and solve
     p = (x0_canon, m0, xf_canon, μ_canonical, CDU, CTU)
     bvp2 = TwoPointBVProblem(low_thrust_optimal_control!, boundary_condition, state_init, tspan, p)
-    sol = solve(bvp2, Shooting(Vern7()), dt=dt, abstol=abstol, reltol=reltol) # we need to use the MIRK4 solver for TwoPointBVProblem
+    sol = solve(bvp2, Shooting(Vern7()), dt=dt, abstol=abstol, reltol=reltol, kwargs...) # we need to use the MIRK4 solver for TwoPointBVProblem
 
     # Redimensionalize problem
     MEE_out = hcat([state[1:6] for state in sol.u])
