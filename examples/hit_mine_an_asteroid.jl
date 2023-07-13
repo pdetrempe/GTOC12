@@ -34,12 +34,16 @@ x₀⁺, xₜ = fixed_time_single_shoot(x₀, Δt, r_target; print_iter=true)
 mining_ship = GTOC12.Mining_Ship()
 
 line_array = []
-line_array = GTOC12.record_line(line_array, "launch", x₀, x₀⁺, GTOC12.ET₀, mining_ship, 0.0)
-
+line_array = GTOC12.record_line(line_array, "launch", [x₀, x₀⁺], GTOC12.ET₀, mining_ship)
 
 # hit an asteroid 
-x_spacecraft, sol     = calculation_continuous_burn_arc(x₀⁺, x_target, Δt; m0=mining_ship.mass_total, μ=GTOC12.μ_☉, dt=24*3600)
-T_spacecraft, time_ET = calculation_post_process_burns(x₀⁺, sol)
+t0 = GTOC12.ET₀
+x_spacecraft, T_spacecraft, time_ET = calculation_continuous_burn_arc(x₀⁺, x_target, Δt, t0; m0=mining_ship.mass_total, μ=GTOC12.μ_☉, dt=24*3600)
+line_array = GTOC12.record_line(line_array, "burn", x_spacecraft, time_ET, mining_ship, control=T_spacecraft)
+# Deployment
+# TODO need to update mass in the mining_ship so that it can be used in this file 
+# TODO mass is wrong in the second line when deploying 
+line_array = GTOC12.record_line(line_array, "rendezvous", x_spacecraft[end], time_ET[end], mining_ship, rendez_flag="deploy", event_ID=ID_min)
 
 
 # deploy a miner 

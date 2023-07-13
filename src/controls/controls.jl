@@ -92,7 +92,7 @@ function bc2!(residual, state, p, t)
 end
 
 
-function calculation_continuous_burn_arc(x0, xf, Δt; m0, μ=GTOC12.μ_☉, dt=24*3600, abstol=1e-6, reltol=1e-10)
+function calculation_continuous_burn_arc(x0, xf, Δt, t0; m0, μ=GTOC12.μ_☉, dt=24*3600, abstol=1e-6, reltol=1e-10)
     # Largely a wrapper for the DifferentialEquations.jl 2-point BVP
 
     # Non-dimensionalize problem
@@ -108,27 +108,27 @@ function calculation_continuous_burn_arc(x0, xf, Δt; m0, μ=GTOC12.μ_☉, dt=2
     p = (x0_canon, m0, xf_canon, μ_canonical, CDU, CTU)
     bvp2 = TwoPointBVProblem(low_thrust_optimal_control!, bc2!, state_init, tspan, p)
     sol = solve(bvp2, Shooting(Vern7()), dt=dt, abstol=abstol, reltol=reltol) # we need to use the MIRK4 solver for TwoPointBVProblem
+
+    T_vector, time_vector_ET = calculate_optimal_control(sol, t0, CDU=CDU, CTU=CTU, μ=μ_canonical)
+
+
     
     # Redimensionalize problem
     MEE_out = hcat([state[1:6] for state in sol.u])
     x_spacecraft = MEE2Cartesian.(MEE_out; μ=μ_canonical)
     redimensionalize_state!.(x_spacecraft; CDU=CDU, CTU=CTU)
-    return x_spacecraft, sol
+    return x_spacecraft, T_vector, time_vector_ET
 end
 
 
 
 
-function calculation_post_process_burns(x0, sol)
+function calculate_optimal_control(sol, t0; CDU, CTU, μ)
+    T = GTOC12.T_max/(CDU/CTU^2) # Max Thrust (kg-m/s^2). Non-dimensionalize
     T_vector = zeros(length(sol.t), 3)
     time_vector_ET = zeros(length(sol.t))
-    # Unpack Params from Non-dimensionalize problem
-    μ = GTOC12.μ_☉
-    #x0_canon, CDU, CTU, μ_canonical = get_canonical_state(sol.u[1][1:6]; μ=μ)
     for (idx, state_aug) in enumerate(sol.u)
         x = state_aug[1:6]
-        CDU = norm(x[1:3])  # Canonical Distance Unit
-        CTU = √(CDU^3/μ)    # Canonical Time Unit
         m = state_aug[7]
         λ = state_aug[8:13]
         B = B_equinoctial(x; μ=μ)
@@ -142,11 +142,15 @@ function calculation_post_process_burns(x0, sol)
         else
             δ_star = 0.0
         end
-        T_vector[idx, :] = δ_star * u_star
+        #T_vector[idx, :] = T * δ_star / m * B * u_star
+        T_vector[idx, :] = T * δ_star / m * u_star
         time_vector_ET[idx] = redimensionalize_time(sol.t[idx], CTU=CTU)
         # TODO update Mining Ship mass here?
     end
-    # TODO convert T_vector to necessary units and frame 
+    # Convert T_vector to necessary units
+    T_vector *= (CDU/CTU^2)
+    # add t0 to delta t vector
+    time_vector_ET .+= t0
     #time_vector_ET = canonical_time(sol.t, CTU=CTU)
     return T_vector, time_vector_ET
 end

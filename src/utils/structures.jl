@@ -15,7 +15,7 @@ end
 
 mutable struct Mining_Ship
     ship_ID::Int
-    miner_count::Float64 
+    miner_count::Int
     miners_onboard::Array                         # array of miners on board
     mass_dry::Float64                             # Dry mass (kg)
     mass_wet::Float64                             # wet mass from prop (kg)
