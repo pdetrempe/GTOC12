@@ -1,6 +1,6 @@
 using DifferentialEquations
 
-export calculation_continuous_burn_arc, low_thrust_optimal_control!, bc2!, calculate_hamiltonian
+export calculation_continuous_burn_arc, low_thrust_optimal_control!, bc2!, calculate_hamiltonian, calculation_post_process_burns
 
 
 function calculate_hamiltonian(x, p)
@@ -38,6 +38,8 @@ function low_thrust_optimal_control!(dstate, state, p, t)
     else
         δ_star = 0.0
     end
+    cntrl = u_star*δ_star
+    #println("Control: ", cntrl)
 
     # Spacecraft Dynamics 
     # *************************************************
@@ -111,5 +113,43 @@ function calculation_continuous_burn_arc(x0, xf, Δt; m0, μ=GTOC12.μ_☉, dt=2
     MEE_out = hcat([state[1:6] for state in sol.u])
     x_spacecraft = MEE2Cartesian.(MEE_out; μ=μ_canonical)
     redimensionalize_state!.(x_spacecraft; CDU=CDU, CTU=CTU)
-    return x_spacecraft
+    return x_spacecraft, sol
 end
+
+
+
+
+function calculation_post_process_burns(x0, sol)
+    T_vector = zeros(length(sol.t), 3)
+    time_vector_ET = zeros(length(sol.t))
+    # Unpack Params from Non-dimensionalize problem
+    μ = GTOC12.μ_☉
+    #x0_canon, CDU, CTU, μ_canonical = get_canonical_state(sol.u[1][1:6]; μ=μ)
+    for (idx, state_aug) in enumerate(sol.u)
+        x = state_aug[1:6]
+        CDU = norm(x[1:3])  # Canonical Distance Unit
+        CTU = √(CDU^3/μ)    # Canonical Time Unit
+        m = state_aug[7]
+        λ = state_aug[8:13]
+        B = B_equinoctial(x; μ=μ)
+
+        # Optimal Control Strategy 
+        # *************************************************
+        u_star = -B' * λ / norm(B' * λ)
+        S = norm(B' * λ) .- 1.0
+        if S > 0
+            δ_star = 1.0
+        else
+            δ_star = 0.0
+        end
+        T_vector[idx, :] = δ_star * u_star
+        time_vector_ET[idx] = redimensionalize_time(sol.t[idx], CTU=CTU)
+        # TODO update Mining Ship mass here?
+    end
+    # TODO convert T_vector to necessary units and frame 
+    #time_vector_ET = canonical_time(sol.t, CTU=CTU)
+    return T_vector, time_vector_ET
+end
+
+
+

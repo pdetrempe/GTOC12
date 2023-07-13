@@ -54,7 +54,7 @@ function propagate_universal(x⃗, Δt; μ=GTOC12.μ_☉, tol=1e-6)
 
     # Need to normalize by canonical units
     CDU = norm(r⃗₀)  # Canonical Distance Unit
-    CTU = √(CDU^3/μ)# Canonical Time Unit
+    CTU = √(CDU^3/μ) # Canonical Time Unit
     μ = 1
 
     r⃗₀ = r⃗₀/CDU

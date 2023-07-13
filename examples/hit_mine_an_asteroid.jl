@@ -36,21 +36,26 @@ mining_ship = GTOC12.Mining_Ship()
 line_array = []
 line_array = GTOC12.record_line(line_array, "launch", x₀, x₀⁺, GTOC12.ET₀, mining_ship, 0.0)
 
+
+# hit an asteroid 
+x_spacecraft, sol     = calculation_continuous_burn_arc(x₀⁺, x_target, Δt; m0=mining_ship.mass_total, μ=GTOC12.μ_☉, dt=24*3600)
+T_spacecraft, time_ET = calculation_post_process_burns(x₀⁺, sol)
+
+
+# deploy a miner 
+
+# hit an asteroid 
+
+# recover a miner
+
+# rendezvous with earth 
+
+
+
+
 # write lines to txt file
 file = open("output.txt", "w")
 for line in line_array
     write(file, line)
 end
 close(file)
-
-
-# hit an asteroid 
-
-# deploy a miner 
-
-# recover a miner
-
-# rendezvous with earth 
-
-# output dataframe
-
