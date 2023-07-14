@@ -92,7 +92,7 @@ function bc2!(residual, state, p, t)
 end
 
 
-function calculation_continuous_burn_arc(x0, xf, Δt, t0; m0, μ=GTOC12.μ_☉, dt=24*3600, abstol=1e-6, reltol=1e-10)
+function calculation_continuous_burn_arc(x0, xf, Δt, t0; m0, μ=GTOC12.μ_☉, dt=24*3600, abstol=1e-6, reltol=1e-10, output_times=nothing)
     # Largely a wrapper for the DifferentialEquations.jl 2-point BVP
 
     # Non-dimensionalize problem
@@ -107,7 +107,12 @@ function calculation_continuous_burn_arc(x0, xf, Δt, t0; m0, μ=GTOC12.μ_☉, 
     # Pack up parameters and solve
     p = (x0_canon, m0, xf_canon, μ_canonical, CDU, CTU)
     bvp2 = TwoPointBVProblem(low_thrust_optimal_control!, bc2!, state_init, tspan, p)
-    sol = solve(bvp2, Shooting(Vern7()), dt=dt, abstol=abstol, reltol=reltol) # we need to use the MIRK4 solver for TwoPointBVProblem
+    if output_times === nothing
+        sol = solve(bvp2, Shooting(Vern7()), dt=dt, abstol=abstol, reltol=reltol) # we need to use the MIRK4 solver for TwoPointBVProblem
+    else
+        output_times = canonical_time(output_times; CTU=CTU)
+        sol = solve(bvp2, Shooting(Vern7()), dt=dt, abstol=abstol, reltol=reltol, saveat=output_times) # we need to use the MIRK4 solver for TwoPointBVProblem
+    end
 
     T_vector, time_vector_ET = calculate_optimal_control(sol, t0, CDU=CDU, CTU=CTU, μ=μ_canonical)
 

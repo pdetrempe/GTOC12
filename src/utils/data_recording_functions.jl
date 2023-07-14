@@ -12,7 +12,7 @@ function record_line(line_array, event::String, state, time_vector, mining_ship;
         first_line = string(mining_ship.ship_ID, " ", event_ID, " ", time_vector[1], " ") * join([0.0, 0.0, 0.0], " ") * "\n"
         line_array = vcat(line_array, first_line)
 
-        for (time, thrust) in zip(time_vector, control)
+        for (time, thrust) in zip(time_vector, eachrow(control))
             line = string(mining_ship.ship_ID, " ", event_ID, " ", time, " ") * join(thrust, " ") * "\n"
             line_array = vcat(line_array, line)
         end
@@ -67,6 +67,6 @@ function record_line(line_array, event::String, state, time_vector, mining_ship;
         line_array = vcat(line_array, after_line)
     end
 
-    return line_array
+    return line_array, mining_ship
 
 end

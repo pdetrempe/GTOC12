@@ -25,8 +25,7 @@ function recover_a_miner(mining_ship, asteroid_miner, current_time::Float64)
 end
 
 function mining_ship_total_mass(mining_ship)
-        mass_total = sum([mining_ship.miners_onboard[i].mass for i in 1:mining_ship.miner_count]) 
-            + mining_ship.mass_collected + mining_ship.mass_dry + mining_ship.mass_wet
+        mass_total = sum([mining_ship.miners_onboard[i].mass for i in 1:mining_ship.miner_count]) + mining_ship.mass_collected + mining_ship.mass_dry + mining_ship.mass_wet
 
         return mass_total
 

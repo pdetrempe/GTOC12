@@ -1,6 +1,7 @@
 using GTOC12
 using Plots
 using LinearAlgebra
+using Interpolations
 
 # initialize()
 # Find asteroid closest (in terms of orbital energy) to the Earth
@@ -34,23 +35,30 @@ x₀⁺, xₜ = fixed_time_single_shoot(x₀, Δt, r_target; print_iter=true)
 mining_ship = GTOC12.Mining_Ship()
 
 line_array = []
-line_array = GTOC12.record_line(line_array, "launch", [x₀, x₀⁺], GTOC12.ET₀, mining_ship)
+line_array, mining_ship = GTOC12.record_line(line_array, "launch", [x₀, x₀⁺], GTOC12.ET₀, mining_ship)
 
 # hit an asteroid 
 t0 = GTOC12.ET₀
-x_spacecraft, T_spacecraft, time_ET = calculation_continuous_burn_arc(x₀⁺, x_target, Δt, t0; m0=mining_ship.mass_total, μ=GTOC12.μ_☉, dt=24*3600)
-line_array = GTOC12.record_line(line_array, "burn", x_spacecraft, time_ET, mining_ship, control=T_spacecraft)
-# Deployment
+every_day = 24 * 60 * 60
+x_spacecraft, T_spacecraft, time_ET = calculation_continuous_burn_arc(x₀⁺, x_target, Δt, t0; m0=mining_ship.mass_total,
+                                                                    μ=GTOC12.μ_☉, dt=24*3600, output_times=every_day)
+
+#for (c,d) in zip(time_ET, eachrow(T_spacecraft))
+    #println(d)
+    #println(length(d))
+#end
+#x_spacecraft_updated = interpolate(time_ET, x_spacecraft, desired_time_ET, Gridded(Linear()))
+
+line_array, mining_ship = GTOC12.record_line(line_array, "burn", x_spacecraft, time_ET, mining_ship, control=T_spacecraft)
+# Deploy a miner
 # TODO need to update mass in the mining_ship so that it can be used in this file 
 # just output mining structure as well 
 # could change this to event_line? 
 # TODO mass is wrong in the second line when deploying 
-line_array = GTOC12.record_line(line_array, "rendezvous", x_spacecraft[end], time_ET[end], mining_ship, rendez_flag="deploy", event_ID=ID_min)
 
+# hit an asteroid, deploy a miner
+line_array, mining_ship = GTOC12.record_line(line_array, "rendezvous", x_spacecraft[end], time_ET[end], mining_ship, rendez_flag="deploy", event_ID=ID_min)
 
-# deploy a miner 
-
-# hit an asteroid 
 
 # recover a miner
 
