@@ -48,36 +48,42 @@ m = 3000.0 # kg
 # - Extract mass
 
 @time x_burn_arc_1, sol = calculate_rendezvous(x₀⁺, x_target, Δt; m0=m, μ=GTOC12.μ_☉, dt=24*3600,
-abstol=1e-5, 
-reltol=1e-8)
+abstol=1e-10, 
+reltol=1e-14)
 r_burn_arc_1 = getindex.(x_burn_arc_1', 1:3)'
 mass_arc_1 = getindex.(sol.u, 7)
 
-# # # # Calculate re-rendezvous with asteroid years later
-# ET_departure2 = ET_target + 0#0.25*365*24*3600
-# transfer_time = 0.35*365*24*3600
-# ET_rendevous2 = ET_departure2 + transfer_time
-# transfer_time = ET_rendevous2 - ET_departure2
-# x_rendezvous2 = get_body_state(Earth; ET=ET_rendevous2)
-# x0 = get_body_state(asteroid; ET=ET_departure2)
+println("asteroid_rendezvous_resid $(x_burn_arc_1[end] - x_target)")
 
-# # The BVP will try to use the final value as an initial guess, which is bad when we just want to intercept
-# v⃗₀_lambert, vf_lambert = lambert(; r⃗₀=x0[1:3], r⃗=x_rendezvous2[1:3], Δt=transfer_time, tₘ=-1)
-# xf = [x_rendezvous2[1:3]; vf_lambert]
+# # # Calculate re-rendezvous with asteroid years later
+ET_departure2 = ET_target + 0#0.25*365*24*3600
+transfer_time = 0.25*365*24*3600
+ET_rendevous2 = ET_departure2 + transfer_time
+transfer_time = ET_rendevous2 - ET_departure2
+x_intercept = get_body_state(Earth; ET=ET_rendevous2)
+x0 = get_body_state(asteroid; ET=ET_departure2)
 
-# # Try intercepting this Lambert arc partway around
+# The BVP will try to use the final value as an initial guess, which is bad when we just want to intercept
+v⃗₀_lambert, vf_lambert = lambert(; r⃗₀=x0[1:3], r⃗=x_intercept[1:3], Δt=transfer_time, tₘ=-1)
+xf = [x_intercept[1:3]; vf_lambert]
+
+# Try intercepting this Lambert arc partway around
 # x0_lambert = [x0[1:3]; v⃗₀_lambert]
 # t_to_lambert = 1*transfer_time
 # x_lambert_some_time_around = propagate_universal(x0_lambert, t_to_lambert)
-# x_burn_arc_2 = calculate_intercept(x0, x_lambert_some_time_around, t_to_lambert; m0=m, dt=24*3600)
-# r_burn_arc_2 = getindex.(x_burn_arc_2', 1:3)'
+@time x_burn_arc_2, sol = calculate_intercept(x0, x_intercept, transfer_time; m0=m, dt=24*3600,
+abstol=1e-12, 
+reltol=1e-16)
+r_burn_arc_2 = getindex.(x_burn_arc_2', 1:3)'
 
-# V_∞ = norm((x_burn_arc_2[end] - x_rendezvous2)[4:6])
-# println("V_∞ = $V_∞")
+println("earth_intercept_resid $(x_burn_arc_2[end] - x_intercept)")
 
-# # Plot solution alongside coasts
-# plot!(r_burn_arc_1[:,1], r_burn_arc_1[:,2], r_burn_arc_1[:,3], color="cyan", label="steered burn 1")
-# plot!(r_burn_arc_2[:,1], r_burn_arc_2[:,2], r_burn_arc_2[:,3], color="magenta", label="steered burn 2")
+V_∞ = norm((x_burn_arc_2[end] - x_intercept)[4:6])
+println("V_∞ = $V_∞")
+
+# Plot solution alongside coasts
+plot!(r_burn_arc_1[:,1], r_burn_arc_1[:,2], r_burn_arc_1[:,3], color="cyan", label="steered burn 1")
+plot!(r_burn_arc_2[:,1], r_burn_arc_2[:,2], r_burn_arc_2[:,3], color="magenta", label="steered burn 2")
 
 # plot_coast!(x0_lambert, transfer_time; label="Lambert arc 2", color="Green")
 # plot_body!(Earth; ETs=[ET_departure2, ET_rendevous2], color="Cyan")

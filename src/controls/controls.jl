@@ -81,6 +81,9 @@ function bc_rendezvous!(residual, state, p, t)
     p_0 = MEE_init
     p_f = MEE_target
 
+    pos2vel_ratio = 1e-4
+
+
     # initial boundary value 
     # ***********************************
     residual[1] = MEE_current_canon[1][1] - p_0[1]
@@ -113,24 +116,29 @@ function bc_intercept!(residual, state, p, t)
     MEE_current_end = state[end]
     x_end_canon = MEE2Cartesian(MEE_current_end[1:6]; μ=μ)
 
+    # Cartesian:MEE constraint ratio
+    # Constraints are in 2 different state descriptions, need to tune to get similar performance
+    cart2MEE_ratio = 10
+    pos2vel_ratio = 1e-4
+
     # Initial/final boundary conditions
     p_0 = MEE_init
     p_f = rf
 
     # initial boundary value 
     # ***********************************
-    residual[1] = MEE_current_canon[1][1] - p_0[1]
-    residual[2] = MEE_current_canon[1][2] - p_0[2]
-    residual[3] = MEE_current_canon[1][3] - p_0[3]
-    residual[4] = MEE_current_canon[1][4] - p_0[4]
-    residual[5] = MEE_current_canon[1][5] - p_0[5]
-    residual[6] = MEE_current_canon[1][6] - p_0[6]
+    residual[1] = (MEE_current_canon[1][1] - p_0[1])
+    residual[2] = (MEE_current_canon[1][2] - p_0[2])
+    residual[3] = (MEE_current_canon[1][3] - p_0[3])
+    residual[4] = (MEE_current_canon[1][4] - p_0[4])
+    residual[5] = (MEE_current_canon[1][5] - p_0[5])
+    residual[6] = (MEE_current_canon[1][6] - p_0[6])
 
     # final boundary value 
     # ***********************************
-    residual[7] = x_end_canon[1] - p_f[1]
-    residual[8] = x_end_canon[2] - p_f[2]
-    residual[9] = x_end_canon[3] - p_f[3]
+    residual[7] = (x_end_canon[1] - p_f[1])*cart2MEE_ratio
+    residual[8] = (x_end_canon[2] - p_f[2])*cart2MEE_ratio
+    residual[9] = (x_end_canon[3] - p_f[3])*cart2MEE_ratio
 
     # Initial mass constraint
     # ***********************************
