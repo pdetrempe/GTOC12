@@ -42,6 +42,8 @@ x_spacecraft, T_spacecraft, time_ET = calculation_continuous_burn_arc(x₀⁺, x
 line_array = GTOC12.record_line(line_array, "burn", x_spacecraft, time_ET, mining_ship, control=T_spacecraft)
 # Deployment
 # TODO need to update mass in the mining_ship so that it can be used in this file 
+# just output mining structure as well 
+# could change this to event_line? 
 # TODO mass is wrong in the second line when deploying 
 line_array = GTOC12.record_line(line_array, "rendezvous", x_spacecraft[end], time_ET[end], mining_ship, rendez_flag="deploy", event_ID=ID_min)
 
