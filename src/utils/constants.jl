@@ -12,3 +12,5 @@ const MASS_ABS_TOL = .001; # .001 kg tolerance
 const g0 = 9.80665 # m/s^2
 const Isp = 4000   # seconds 
 const T_max = 0.6 # Max Thrust 
+const TT_start = "2035, Jan 1, 00:00:00.0000 (TDT)" # TT is TDT in SPICE
+const MJD_0 = 64328.0;

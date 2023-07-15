@@ -5,6 +5,9 @@ function record_line(line_array, event::String, state, time_vector, mining_ship;
     #total_mass = mining_ship.mass_dry + mining_ship.mass_wet + mining_ship.mass_collected
     #line_array = []
 
+    state ./= 1000.0 # Convert from m, m/s to km, km/s
+    time_vector = (time_vector .- GTOC12.ET₀)/(24*3600) .+ GTOC12.MJD_0 # convert to MJD
+
     if event == "burn"
         # Event ID -1 
         # TODO

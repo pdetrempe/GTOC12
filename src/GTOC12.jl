@@ -32,6 +32,7 @@ module GTOC12
     include("utils/helper_functions.jl")
     include("utils/mining_functions.jl")
     include("utils/structures.jl")
+    include("utils/planets_on_rails.jl")
 
     # Targeters, Optimizers, and Controllers
     include("targeting/targeting.jl")
@@ -43,12 +44,6 @@ module GTOC12
 
     # Plotting
     include("plotting/plotting.jl")
-
-
-
-
-
-
 
 
 end
