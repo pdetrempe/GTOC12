@@ -59,7 +59,7 @@ function low_thrust_optimal_control!(dstate, state, p, t)
 
     # Do ṁ calculations using dimensional units
     c_dim = GTOC12.Isp * GTOC12.g0
-    dm = -GTOC12.T_max / c_dim * δ_star
+    dm = -T / c * δ_star
 
 
     # Costate diff eqs
@@ -113,6 +113,42 @@ function bc_rendezvous!(residual, state, p, t)
     residual[10] = MEE_current_canon[end][4] - p_f[4]
     residual[11] = MEE_current_canon[end][5] - p_f[5]
     residual[12] = MEE_current_canon[end][6] - p_f[6]
+
+    # Initial mass constraint
+    # ***********************************
+    residual[13] = (state[1][7] - m0)
+
+end
+
+function bc_rendezvous_cartesian!(residual, state, p, t)
+    # u[1] is the beginning of the time span, and u[end] is the ending
+    x0, m0, xf, μ, CDU, CTU = p
+
+    # Try converting to Cartesian for better approximation of actual Constraints
+    MEE_current_end = state[end]
+    MEE_current_start = state[1]
+    x_end_canon = MEE2Cartesian(MEE_current_end[1:6]; μ=μ)
+    x_start_canon = MEE2Cartesian(MEE_current_start[1:6]; μ=μ)
+
+    pos_vel_ratio = 1e-6 # Constraint is 1000km vs. 1 m/s
+
+    # initial boundary value 
+    # ***********************************
+    residual[1] = (x_start_canon[1] - x0[1]) * pos_vel_ratio * CDU
+    residual[2] = (x_start_canon[2] - x0[2]) * pos_vel_ratio * CDU
+    residual[3] = (x_start_canon[3] - x0[3]) * pos_vel_ratio * CDU
+    residual[4] = (x_start_canon[4] - x0[4])*CDU/CTU
+    residual[5] = (x_start_canon[5] - x0[5])*CDU/CTU
+    residual[6] = (x_start_canon[6] - x0[6])*CDU/CTU
+
+    # final boundary value 
+    # ***********************************
+    residual[7] = (x_end_canon[1] - xf[1]) * pos_vel_ratio * CDU
+    residual[8] = (x_end_canon[2] - xf[2]) * pos_vel_ratio * CDU
+    residual[9] = (x_end_canon[3] - xf[3]) * pos_vel_ratio * CDU
+    residual[10] = (x_end_canon[4] - xf[4]) * CDU / CTU
+    residual[11] = (x_end_canon[5] - xf[5]) * CDU / CTU
+    residual[12] = (x_end_canon[6] - xf[6]) * CDU / CTU
 
     # Initial mass constraint
     # ***********************************
