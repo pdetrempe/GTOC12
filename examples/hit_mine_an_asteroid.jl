@@ -14,7 +14,8 @@ x_Earth = get_body_state(GTOC12.Earth; ET=ET_start)
 x₀ = x_Earth + [0; 0; 0; DV₀[:]]
 
 # Transfer time
-Δt = 0.3207 * 365 * 24 * 3600.0
+# Δt = 0.3207 * 365 * 24 * 3600.0
+Δt = .4 * 365*24*3600
 ΔV∞_max = 6000.0;
 
 # Fixed-time shooting to hit asteroid
@@ -22,6 +23,8 @@ x₀ = x_Earth + [0; 0; 0; DV₀[:]]
 ET_target = ET_start + Δt
 x_target = get_body_state(asteroid; ET=ET_target)
 r_target = view(x_target, 1:3)
+
+every_day = 24 * 60 * 60
 
 # NOTE: This is super brittle to initial conditions
 # TODO: add a Lambert targetter for doing initial guess
@@ -41,21 +44,20 @@ line_array = Vector{String}()
 line_array, mining_ship = GTOC12.record_line(line_array, "launch", [x_Earth, x₀⁺], ET_start, mining_ship)
 
 # hit an asteroid 
-every_day = 24 * 60 * 60
 t0 = ET_start
 x_spacecraft, T_spacecraft, time_ET, mass_out = calculate_rendezvous_from_Earth(x₀⁺, x_target, Δt, t0; m0=mining_ship.mass_total,
                                                                     μ=GTOC12.μ_☉, dt=24*3600, output_times=every_day,
                                                                     abstol = 1e-9, reltol=1e-11)
-r_burn_arc_1 = getindex.(x_spacecraft', 1:3)'
 
 # # Pick some distance out from asteroid to start firing
-# Δt_burn = 40*24*3600
+# Δt_burn = 90*24*3600
 # ET_burn_start = ET_target - Δt_burn
 # x_burn_start = propagate_universal(x₀⁺, ET_burn_start - ET_start)
+# t0 = ET_burn_start
 # x_spacecraft, T_spacecraft, time_ET, mass_out = calculate_rendezvous(x_burn_start, x_target, Δt_burn, t0; m0=mining_ship.mass_total,
 #                                                                     μ=GTOC12.μ_☉, dt=24*3600, output_times=every_day,
-#                                                                     abstol = 1e-7, reltol=1e-9)
-
+#                                                                     abstol = 1e-9, reltol=1e-10)
+r_burn_arc_1 = getindex.(x_spacecraft', 1:3)'
 println("asteroid_rendezvous_resid $(x_spacecraft[end] - x_target)")
 
 

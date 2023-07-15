@@ -305,7 +305,7 @@ function calculate_optimal_control(sol, t0; CDU, CTU, μ)
             δ_star = 0.0
         end
         # Need to rotate control from RTN frame to inertial frame
-        R_inrt2lvlh = DCM_inertial_to_lvlh(x)
+        R_inrt2lvlh = DCM_inertial_to_rtn(x)
         T_vector[idx, :] = R_inrt2lvlh' * T * δ_star / m * u_star
         time_vector_ET[idx] = redimensionalize_time(sol.t[idx], CTU=CTU)
         # TODO update Mining Ship mass here?
