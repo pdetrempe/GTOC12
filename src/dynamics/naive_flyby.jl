@@ -4,7 +4,7 @@ export body_SOI, hyp_turn_angle, hyp_periapsis, hyp_exit_r⃗, hyp_exit_v⃗, hy
 get_GM(μ_CB_or_CB_name) = typeof(μ_CB_or_CB_name) != String ? μ_CB_or_CB_name : bodvrd(μ_CB_or_CB_name, "GM")[1] # if GM provided directly (is a number), use it, else retrieve from body name (String)
 
 function body_SOI(; CB::String, orbiting_body::String)
-    orbiting_body_state = spkgeo(bodn2c(orbiting_body), 0, base_ref_frame, bodn2c(CB))[1]
+    orbiting_body_state = spkgeo(bodn2c(orbiting_body), 0, default_ref_frame, bodn2c(CB))[1]
     orbiting_body_GM = bodvrd(orbiting_body, "GM")[1]
     CB_GM = bodvrd(CB, "GM")[1]
     orbiting_body_a = 1 / (2 / norm(orbiting_body_state[1:3]) - norm(orbiting_body_state[4:6])^2 / CB_GM) # Vallado 4e Eq. 2-74 (p96)
@@ -28,7 +28,6 @@ end
 
 function hyp_exit_r⃗(; x⃗∞, μ_CB_or_CB_name)
     r⃗∞ = view(x⃗∞, 1:3)
-    v⃗∞ = view(x⃗∞, 4:6)
     return vrotv( # Mirror the radius vector "at infinity" about the periapsis vector
         r⃗∞, # To be rotated
         e⃗(x⃗=x⃗∞, μ_CB_or_CB_name=μ_CB_or_CB_name), # periapsis vector (not required to be unit vector)
@@ -49,7 +48,7 @@ end
 function hyp_exit_x⃗(; x⃗∞, μ_CB_or_CB_name)
     r⃗∞ = view(x⃗∞, 1:3)
     v⃗∞ = view(x⃗∞, 4:6)
-    ecc = e⃗(r⃗=r⃗∞, v⃗=v⃗∞, μ_CB_or_CB_name=μ_CB_or_CB_name)
+    ecc = e⃗(x⃗=x⃗∞, μ_CB_or_CB_name=μ_CB_or_CB_name)
     exit_x⃗ = Vector{Float64}(undef, 6)
     exit_x⃗[1:3] = vrotv( # Mirror the radius vector "at infinity" about the periapsis vector
         r⃗∞, # To be rotated
@@ -59,7 +58,7 @@ function hyp_exit_x⃗(; x⃗∞, μ_CB_or_CB_name)
     exit_x⃗[4:6] = vrotv(
         v⃗∞,
         r⃗∞ × v⃗∞, # axis of rotation as specific angular momentum vector
-        hyp_turn_angle(e=norm(ecc)) # turn by the hyperbolic turn angle
+        2 * asin(1 / norm(ecc)) # Vallado 4e Eq. 2-28 (p53) # turn by the hyperbolic turn angle
     )
     return exit_x⃗
 end
