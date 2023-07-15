@@ -63,8 +63,9 @@ line_array, mining_ship = GTOC12.record_line(line_array, "burn", x_spacecraft, t
 # hit an asteroid, deploy a miner
 line_array, mining_ship = GTOC12.record_line(line_array, "rendezvous", x_spacecraft[end], time_ET[end], mining_ship, rendez_flag="deploy", event_ID=ID_min)
 
-
-# recover a miner
+# hit an asteroid, recover a miner
+tf = time_ET[end] + every_day*10
+line_array, mining_ship = GTOC12.record_line(line_array, "rendezvous", x_spacecraft[end], tf, mining_ship, rendez_flag="recover", event_ID=ID_min)
 
 # rendezvous with earth 
 

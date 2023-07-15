@@ -32,9 +32,10 @@ function record_line(line_array, event::String, state, time_vector, mining_ship;
         line_array = vcat(line_array, before_line)
 
         if rendez_flag == "deploy"
-            mining_ship = deploy_a_miner(mining_ship)
+            mining_ship = deploy_a_miner(mining_ship, event_ID, time_vector[end])
         else
-            mining_ship = recover_a_miner(mining_ship, miner, time_vector)
+            #mining_ship = recover_a_miner(mining_ship, event_ID, time_vector[end], asteroid_miner_dictionary)
+            mining_ship = recover_a_miner(mining_ship, event_ID, time_vector[end])
         end
 
         after_line  = string(mining_ship.ship_ID, " ", event_ID, " ", time_vector, " ") * join(state, " ") * string(" ", mining_ship.mass_total) * "\n"
