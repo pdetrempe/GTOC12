@@ -35,38 +35,38 @@ x₀⁺, xₜ = fixed_time_single_shoot(x₀, Δt, r_target; print_iter=true)
 # Initialize Mining Ship
 mining_ship = GTOC12.Mining_Ship()
 
-line_array = []
+line_array = Vector{String}()
 line_array, mining_ship = GTOC12.record_line(line_array, "launch", [x_Earth, x₀⁺], GTOC12.ET₀, mining_ship)
 
-# hit an asteroid 
-t0 = GTOC12.ET₀
-every_day = 24 * 60 * 60
-x_spacecraft, T_spacecraft, time_ET = calculate_rendezvous(x₀⁺, x_target, Δt, t0; m0=mining_ship.mass_total,
-                                                                    μ=GTOC12.μ_☉, dt=24*3600, output_times=every_day)
+# # hit an asteroid 
+# t0 = GTOC12.ET₀
+# every_day = 24 * 60 * 60
+# x_spacecraft, T_spacecraft, time_ET = calculate_rendezvous(x₀⁺, x_target, Δt, t0; m0=mining_ship.mass_total,
+#                                                                     μ=GTOC12.μ_☉, dt=24*3600, output_times=every_day)
 
 
-# x_burn_arc_1, T_vector, time_vector_ET = calculate_rendezvous(x₀⁺, x_target, Δt, GTOC12.ET₀; m0=m, μ=GTOC12.μ_☉, dt=24*3600,
-# abstol=1e-10, 
-# reltol=1e-14)
-#for (c,d) in zip(time_ET, eachrow(T_spacecraft))
-    #println(d)
-    #println(length(d))
-#end
-#x_spacecraft_updated = interpolate(time_ET, x_spacecraft, desired_time_ET, Gridded(Linear()))
+# # x_burn_arc_1, T_vector, time_vector_ET = calculate_rendezvous(x₀⁺, x_target, Δt, GTOC12.ET₀; m0=m, μ=GTOC12.μ_☉, dt=24*3600,
+# # abstol=1e-10, 
+# # reltol=1e-14)
+# #for (c,d) in zip(time_ET, eachrow(T_spacecraft))
+#     #println(d)
+#     #println(length(d))
+# #end
+# #x_spacecraft_updated = interpolate(time_ET, x_spacecraft, desired_time_ET, Gridded(Linear()))
 
-line_array, mining_ship = GTOC12.record_line(line_array, "burn", x_spacecraft, time_ET, mining_ship, control=T_spacecraft)
-# Deploy a miner
-# TODO need to update mass in the mining_ship so that it can be used in this file 
-# just output mining structure as well 
-# could change this to event_line? 
-# TODO mass is wrong in the second line when deploying 
+# line_array, mining_ship = GTOC12.record_line(line_array, "burn", x_spacecraft, time_ET, mining_ship, control=T_spacecraft)
+# # Deploy a miner
+# # TODO need to update mass in the mining_ship so that it can be used in this file 
+# # just output mining structure as well 
+# # could change this to event_line? 
+# # TODO mass is wrong in the second line when deploying 
 
-# hit an asteroid, deploy a miner
-line_array, mining_ship = GTOC12.record_line(line_array, "rendezvous", x_spacecraft[end], time_ET[end], mining_ship, rendez_flag="deploy", event_ID=ID_min)
+# # hit an asteroid, deploy a miner
+# line_array, mining_ship = GTOC12.record_line(line_array, "rendezvous", x_spacecraft[end], time_ET[end], mining_ship, rendez_flag="deploy", event_ID=ID_min)
 
-# hit an asteroid, recover a miner
-tf = time_ET[end] + every_day*10
-line_array, mining_ship = GTOC12.record_line(line_array, "rendezvous", x_spacecraft[end], tf, mining_ship, rendez_flag="recover", event_ID=ID_min)
+# # hit an asteroid, recover a miner
+# tf = time_ET[end] + every_day*10
+# line_array, mining_ship = GTOC12.record_line(line_array, "rendezvous", x_spacecraft[end], tf, mining_ship, rendez_flag="recover", event_ID=ID_min)
 
 # rendezvous with earth 
 
@@ -80,11 +80,11 @@ for line in line_array
 end
 close(file)
 
-# Remove empty lines from file
-run(`sed Result.txt`)
+# # Remove empty lines from file
+# run(`sed Result.txt`)
 
-# Move file into problem directory
-mv("Result.txt", "../problem/GTOC12_Verification_Program/GTOC12_Verification/Linux/")
+# # Move file into problem directory
+# mv("Result.txt", "../problem/GTOC12_Verification_Program/GTOC12_Verification/Linux/")
 
 # Run verification program
 # run(``)
