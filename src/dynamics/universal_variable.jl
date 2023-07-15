@@ -18,7 +18,7 @@ function get_c2_c3(ψ)
 end
 
 # Vallado Algorithm 8
-function solve_for_universal_variable(; Χ₀, α, μ=GTOC12.μ_☉, r⃗₀, v⃗₀, Δt, tol=1e-6, MAX_ITER=10 )
+function solve_for_universal_variable(; Χ₀, α, μ=GTOC12.μ_☉, r⃗₀, v⃗₀, Δt, tol=1e-8, MAX_ITER=10 )
     r₀ = norm(r⃗₀)
 
     Χₙ = Χ₀
@@ -48,7 +48,7 @@ function solve_for_universal_variable(; Χ₀, α, μ=GTOC12.μ_☉, r⃗₀, v�
 end
 
 # Vallado Algorithm 8
-function propagate_universal(x⃗, Δt; μ=GTOC12.μ_☉, tol=1e-6)
+function propagate_universal(x⃗, Δt; μ=GTOC12.μ_☉, tol=1e-8)
     r⃗₀ = x⃗[1:3]
     v⃗₀ = x⃗[4:6]
 

@@ -45,7 +45,7 @@ t0 = ET_start
 every_day = 24 * 60 * 60
 x_spacecraft, T_spacecraft, time_ET = calculate_rendezvous_from_Earth(x₀⁺, x_target, Δt, t0; m0=mining_ship.mass_total,
                                                                     μ=GTOC12.μ_☉, dt=24*3600, output_times=every_day,
-                                                                    abstol = 1e-4, reltol=1e-6)
+                                                                    abstol = 1e-5, reltol=1e-7)
 r_burn_arc_1 = getindex.(x_spacecraft', 1:3)'
 println("asteroid_rendezvous_resid $(x_spacecraft[end] - x_target)")
 
@@ -60,9 +60,9 @@ line_array, mining_ship = GTOC12.record_line(line_array, "burn", x_spacecraft, t
 # hit an asteroid, deploy a miner
 line_array, mining_ship = GTOC12.record_line(line_array, "rendezvous", x_spacecraft[end], time_ET[end], mining_ship, rendez_flag="deploy", event_ID=ID_min)
 
-# hit an asteroid, recover a miner
-tf = time_ET[end] + every_day*10
-line_array, mining_ship = GTOC12.record_line(line_array, "rendezvous", x_spacecraft[end], tf, mining_ship, rendez_flag="recover", event_ID=ID_min)
+# # hit an asteroid, recover a miner
+# tf = time_ET[end] + every_day*10
+# line_array, mining_ship = GTOC12.record_line(line_array, "rendezvous", x_spacecraft[end], tf, mining_ship, rendez_flag="recover", event_ID=ID_min)
 
 # # rendezvous with earth 
 
@@ -77,11 +77,13 @@ for line in line_array
 end
 close(file)
 
-# # Remove empty lines from file
-# run(`sed Result.txt`)
+
 
 # # Move file into problem directory
-# mv("Result.txt", "../problem/GTOC12_Verification_Program/GTOC12_Verification/Linux/")
+if isfile("problem/GTOC12_Verification_Program/GTOC12_Verification/Linux/Result.txt")
+    rm("problem/GTOC12_Verification_Program/GTOC12_Verification/Linux/Result.txt")
+end
+mv("./Result.txt", "problem/GTOC12_Verification_Program/GTOC12_Verification/Linux/Result.txt")
 
 # Run verification program
 # run(``)

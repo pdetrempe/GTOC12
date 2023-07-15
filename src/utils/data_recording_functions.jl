@@ -1,12 +1,12 @@
 
-function record_line(line_array::Vector{String}, event::String, state, time_vector, mining_ship::Mining_Ship;
+function record_line(line_array::Vector{String}, event::String, state_in, time_vec_in, mining_ship::Mining_Ship;
      control=nothing, rendez_flag::String="none", event_ID="ERROR")
     #new_line = DataFrame()
     #total_mass = mining_ship.mass_dry + mining_ship.mass_wet + mining_ship.mass_collected
     #line_array = []
 
-    state ./= 1000.0 # Convert from m, m/s to km, km/s
-    time_vector = (time_vector .- GTOC12.ET₀)/(24*3600) .+ GTOC12.MJD_0 # convert to MJD
+    state = state_in./ 1000.0 # Convert from m, m/s to km, km/s
+    time_vector = (time_vec_in .- GTOC12.ET₀)/(24*3600) .+ GTOC12.MJD_0 # convert to MJD
 
     if event == "burn"
         # Event ID -1 
