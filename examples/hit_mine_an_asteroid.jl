@@ -9,7 +9,8 @@ _, ID_min = findmin(abs.(GTOC12.asteroid_df.sma / au2m .- 1))
 asteroid = Asteroid(ID_min)
 furnish_all_kernels()
 DV₀ = [-1000; 0; 3500]
-x₀ = get_body_state(GTOC12.Earth; ET=GTOC12.ET₀) + [0; 0; 0; DV₀[:]]
+x_Earth = get_body_state(GTOC12.Earth; ET=GTOC12.ET₀)
+x₀ = x_Earth + [0; 0; 0; DV₀[:]]
 
 # Transfer time
 Δt = 3/4 * 365 * 24 * 3600
@@ -28,14 +29,14 @@ r_target = view(x_target, 1:3)
 # x₀⁺ = vcat(x₀[1:3], v⃗₀)
 # xₜ = vcat(r_target,v⃗) 
 x₀⁺, xₜ = fixed_time_single_shoot(x₀, Δt, r_target; print_iter=true)
-ΔV_departure_1 = (x₀⁺-x₀)[4:6]
+ΔV_departure_1 = (x₀⁺-x_Earth)[4:6]
 ΔV_arrival_1 = (xₜ-x_target)[4:6]
 
 # Initialize Mining Ship
 mining_ship = GTOC12.Mining_Ship()
 
 line_array = []
-line_array, mining_ship = GTOC12.record_line(line_array, "launch", [x₀, x₀⁺], GTOC12.ET₀, mining_ship)
+line_array, mining_ship = GTOC12.record_line(line_array, "launch", [x_Earth, x₀⁺], GTOC12.ET₀, mining_ship)
 
 # hit an asteroid 
 t0 = GTOC12.ET₀
@@ -78,3 +79,12 @@ for line in line_array
     write(file, line)
 end
 close(file)
+
+# Remove empty lines from file
+run(`sed Result.txt`)
+
+# Move file into problem directory
+mv("Result.txt", "../problem/GTOC12_Verification_Program/GTOC12_Verification/Linux/")
+
+# Run verification program
+# run(``)

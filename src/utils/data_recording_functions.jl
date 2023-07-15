@@ -1,5 +1,5 @@
 
-function record_line(line_array, event::String, state, time_vector, mining_ship;
+function record_line(line_array, event::String, state, time_vector, mining_ship::Mining_Ship;
      control=nothing, rendez_flag::String="none", event_ID="ERROR")
     #new_line = DataFrame()
     #total_mass = mining_ship.mass_dry + mining_ship.mass_wet + mining_ship.mass_collected

@@ -1,3 +1,4 @@
+export asteroid_miner, Mining_Ship
 
 mutable struct asteroid_miner
     rate_of_mining::Float64                       # rate of mining kg/year
