@@ -43,9 +43,9 @@ line_array, mining_ship = GTOC12.record_line(line_array, "launch", [x_Earth, x�
 # hit an asteroid 
 t0 = ET_start
 every_day = 24 * 60 * 60
-x_spacecraft, T_spacecraft, time_ET = calculate_rendezvous_from_Earth(x₀⁺, x_target, Δt, t0; m0=mining_ship.mass_total,
+x_spacecraft, T_spacecraft, time_ET, mass_out = calculate_rendezvous_from_Earth(x₀⁺, x_target, Δt, t0; m0=mining_ship.mass_total,
                                                                     μ=GTOC12.μ_☉, dt=24*3600, output_times=every_day,
-                                                                    abstol = 1e-5, reltol=1e-7)
+                                                                    abstol = 1e-7, reltol=1e-9)
 r_burn_arc_1 = getindex.(x_spacecraft', 1:3)'
 println("asteroid_rendezvous_resid $(x_spacecraft[end] - x_target)")
 
@@ -76,8 +76,6 @@ for line in line_array
     write(file, line)
 end
 close(file)
-
-
 
 # # Move file into problem directory
 if isfile("problem/GTOC12_Verification_Program/GTOC12_Verification/Linux/Result.txt")

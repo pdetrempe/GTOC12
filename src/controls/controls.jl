@@ -159,7 +159,7 @@ function bc_rendezvous_cartesian_from_Earth!(residual, state, p, t)
 
 end
 
-
+# TODO: Make Cartesian version of boundary condition
 function bc_intercept!(residual, state, p, t)
     # u[1] is the beginning of the time span, and u[end] is the ending
     x0, m0, rf, μ, _, _ = p
@@ -243,9 +243,10 @@ function solve_bvp(x0, xf, Δt, t0; boundary_condition, m0, μ=GTOC12.μ_☉, dt
 
     # Redimensionalize problem
     MEE_out = hcat([state[1:6] for state in sol.u])
+    mass_out = [state[7] for state in sol.u]
     x_spacecraft = MEE2Cartesian.(MEE_out; μ=μ_canonical)
     redimensionalize_state!.(x_spacecraft; CDU=CDU, CTU=CTU)
-    return x_spacecraft, T_vector, time_vector_ET
+    return x_spacecraft, T_vector, time_vector_ET, mass_out
 end
 
 function calculate_optimal_control(sol, t0; CDU, CTU, μ)
@@ -267,8 +268,9 @@ function calculate_optimal_control(sol, t0; CDU, CTU, μ)
         else
             δ_star = 0.0
         end
-        #T_vector[idx, :] = T * δ_star / m * B * u_star
-        T_vector[idx, :] = T * δ_star / m * u_star
+        # Need to rotate control from RTN frame to inertial frame
+        R_inrt2lvlh = DCM_inertial_to_lvlh(x)
+        T_vector[idx, :] = R_inrt2lvlh' * T * δ_star / m * u_star
         time_vector_ET[idx] = redimensionalize_time(sol.t[idx], CTU=CTU)
         # TODO update Mining Ship mass here?
     end
