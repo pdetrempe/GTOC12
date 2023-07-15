@@ -40,9 +40,13 @@ line_array, mining_ship = GTOC12.record_line(line_array, "launch", [x₀, x₀�
 # hit an asteroid 
 t0 = GTOC12.ET₀
 every_day = 24 * 60 * 60
-x_spacecraft, T_spacecraft, time_ET = calculation_continuous_burn_arc(x₀⁺, x_target, Δt, t0; m0=mining_ship.mass_total,
+x_spacecraft, T_spacecraft, time_ET = calculate_rendezvous(x₀⁺, x_target, Δt, t0; m0=mining_ship.mass_total,
                                                                     μ=GTOC12.μ_☉, dt=24*3600, output_times=every_day)
 
+
+# x_burn_arc_1, T_vector, time_vector_ET = calculate_rendezvous(x₀⁺, x_target, Δt, GTOC12.ET₀; m0=m, μ=GTOC12.μ_☉, dt=24*3600,
+# abstol=1e-10, 
+# reltol=1e-14)
 #for (c,d) in zip(time_ET, eachrow(T_spacecraft))
     #println(d)
     #println(length(d))
@@ -68,7 +72,7 @@ line_array, mining_ship = GTOC12.record_line(line_array, "rendezvous", x_spacecr
 
 
 # write lines to txt file
-file = open("output.txt", "w")
+file = open("Result.txt", "w")
 for line in line_array
     write(file, line)
 end
