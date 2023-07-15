@@ -47,17 +47,17 @@ m = 3000.0 # kg
 # - Extract times (specify times to save at, e.g. daily)
 # - Extract mass
 
-@time x_burn_arc_1, sol = calculate_rendezvous(x₀⁺, x_target, Δt; m0=m, μ=GTOC12.μ_☉, dt=24*3600,
+@time x_burn_arc_1, T_vector, time_vector_ET = calculate_rendezvous(x₀⁺, x_target, Δt, GTOC12.ET₀; m0=m, μ=GTOC12.μ_☉, dt=24*3600,
 abstol=1e-10, 
 reltol=1e-14)
 r_burn_arc_1 = getindex.(x_burn_arc_1', 1:3)'
-mass_arc_1 = getindex.(sol.u, 7)
+# mass_arc_1 = getindex.(sol.u, 7)
 
 println("asteroid_rendezvous_resid $(x_burn_arc_1[end] - x_target)")
 
 # # # Calculate re-rendezvous with asteroid years later
 ET_departure2 = ET_target + 0#0.25*365*24*3600
-transfer_time = 0.25*365*24*3600
+transfer_time = 0.35*365*24*3600
 ET_rendevous2 = ET_departure2 + transfer_time
 transfer_time = ET_rendevous2 - ET_departure2
 x_intercept = get_body_state(Earth; ET=ET_rendevous2)
@@ -71,7 +71,7 @@ xf = [x_intercept[1:3]; vf_lambert]
 # x0_lambert = [x0[1:3]; v⃗₀_lambert]
 # t_to_lambert = 1*transfer_time
 # x_lambert_some_time_around = propagate_universal(x0_lambert, t_to_lambert)
-@time x_burn_arc_2, sol = calculate_intercept(x0, x_intercept, transfer_time; m0=m, dt=24*3600,
+@time x_burn_arc_2, T_vector, time_vector_ET = calculate_intercept(x0, x_intercept, transfer_time, ET_departure2; m0=m, dt=24*3600,
 abstol=1e-12, 
 reltol=1e-16)
 r_burn_arc_2 = getindex.(x_burn_arc_2', 1:3)'

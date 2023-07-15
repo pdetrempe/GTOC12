@@ -148,20 +148,20 @@ function bc_intercept!(residual, state, p, t)
 end
 
 
-function calculate_rendezvous(x0, xf, Δt; m0, μ=GTOC12.μ_☉, dt=24 * 3600, abstol=1e-6, reltol=1e-10, kwargs...)
+function calculate_rendezvous(x0, xf, Δt, t0; m0, μ=GTOC12.μ_☉, dt=24 * 3600, abstol=1e-6, reltol=1e-10, output_times=nothing, kwargs...)
     # Largely a wrapper for the DifferentialEquations.jl 2-point BVP
-    solve_bvp(x0, xf, Δt; boundary_condition=bc_rendezvous!, m0=m0, μ=μ, dt=dt, abstol=abstol, reltol=reltol, kwargs...)
+    solve_bvp(x0, xf, Δt, t0; boundary_condition=bc_rendezvous!, m0=m0, μ=μ, dt=dt, abstol=abstol, reltol=reltol, output_times,kwargs...)
 
 end
 
-function calculate_intercept(x0, xf, Δt; m0, μ=GTOC12.μ_☉, dt=24 * 3600, abstol=1e-6, reltol=1e-10, kwargs...)
+function calculate_intercept(x0, xf, Δt, t0; m0, μ=GTOC12.μ_☉, dt=24 * 3600, abstol=1e-6, reltol=1e-10, output_times=nothing, kwargs...)
     # Largely a wrapper for the DifferentialEquations.jl 2-point BVP
-    solve_bvp(x0, xf, Δt; boundary_condition=bc_intercept!, m0=m0, μ=μ, dt=dt, abstol=abstol, reltol=reltol, kwargs...)
+    solve_bvp(x0, xf, Δt, t0; boundary_condition=bc_intercept!, m0=m0, μ=μ, dt=dt, abstol=abstol, reltol=reltol, output_times, kwargs...)
 
 end
 
 # Wrapper for boundary value problem with different conditions
-function solve_bvp(x0, xf, Δt; boundary_condition, m0, μ=GTOC12.μ_☉, dt=24 * 3600, abstol=1e-6, reltol=1e-10, kwargs...)
+function solve_bvp(x0, xf, Δt, t0; boundary_condition, m0, μ=GTOC12.μ_☉, dt=24 * 3600, abstol=1e-6, reltol=1e-10, output_times=nothing, kwargs...)
 
     # Non-dimensionalize problem
     x0_canon, CDU, CTU, μ_canonical = get_canonical_state(x0; μ=μ)
@@ -174,9 +174,9 @@ function solve_bvp(x0, xf, Δt; boundary_condition, m0, μ=GTOC12.μ_☉, dt=24 
 
     # Pack up parameters and solve
     p = (x0_canon, m0, xf_canon, μ_canonical, CDU, CTU)
-    bvp2 = TwoPointBVProblem(low_thrust_optimal_control!, bc2!, state_init, tspan, p)
+    bvp2 = TwoPointBVProblem(low_thrust_optimal_control!, boundary_condition, state_init, tspan, p)
     if output_times === nothing
-        sol = solve(bvp2, Shooting(Vern7()), dt=dt, abstol=abstol, reltol=reltol) # we need to use the MIRK4 solver for TwoPointBVProblem
+        sol = solve(bvp2, Shooting(Vern7()), dt=dt, abstol=abstol, reltol=reltol, kwargs...) # we need to use the MIRK4 solver for TwoPointBVProblem
     else
         output_times = canonical_time(output_times; CTU=CTU)
         sol = solve(bvp2, Shooting(Vern7()), dt=dt, abstol=abstol, reltol=reltol, saveat=output_times, kwargs...) # we need to use the MIRK4 solver for TwoPointBVProblem
