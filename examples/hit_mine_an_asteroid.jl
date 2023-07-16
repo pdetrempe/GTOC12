@@ -75,12 +75,36 @@ line_array, mining_ship = GTOC12.record_line(line_array, "burn", x_spacecraft, t
 # hit an asteroid, deploy a miner
 line_array, mining_ship = GTOC12.record_line(line_array, "rendezvous", x_spacecraft[end], time_ET[end], mining_ship, rendez_flag="deploy", event_ID=ID_min)
 
-# # hit an asteroid, recover a miner
-# tf = time_ET[end] + every_day*10
-# line_array, mining_ship = GTOC12.record_line(line_array, "rendezvous", x_spacecraft[end], tf, mining_ship, rendez_flag="recover", event_ID=ID_min)
 
-# # rendezvous with earth 
+# Wait 10 years, then recover a miner
+t_wait = 10.5*365*24*3600
+ET_recover = time_ET[end] + t_wait
+x_recover = propagate_universal(x_spacecraft[end], t_wait)
+line_array, mining_ship = GTOC12.record_line(line_array, "rendezvous", x_recover, ET_recover, mining_ship, rendez_flag="recover", event_ID=ID_min)
 
+# Intercept the earth 
+ET_departure2 = ET_recover#0.25*365*24*3600
+transfer_time = 0.4*365*24*3600
+ET_rendevous2 = ET_departure2 + transfer_time
+transfer_time = ET_rendevous2 - ET_departure2
+x_intercept = get_body_state(Earth; ET=ET_rendevous2)
+x_burn_arc_2, T_vector, time_vector_ET, mass_out = calculate_intercept(x_recover, x_intercept, transfer_time, ET_departure2; m0=mining_ship.mass_total, dt=24*3600,
+abstol=1e-9, 
+reltol=1e-11)
+r_burn_arc_2 = getindex.(x_burn_arc_2', 1:3)'
+
+println("earth_intercept_resid $(x_burn_arc_2[end] - x_intercept)")
+
+line_array, mining_ship = GTOC12.record_line(line_array, "burn", x_burn_arc_2, time_vector_ET, mining_ship, control=T_vector)
+
+# Record the Earth flyby and drop off cargo
+flyby_states = [x_burn_arc_2[end]]
+ET_flyby = time_vector_ET[end]
+# Calculate post-flyby state and append it to flyby_states vector
+x_flyby_out = naive_flyby(; x⃗_inrt=flyby_states[1], epoch_et=ET_flyby, flyby_body=Earth)
+push!(flyby_states, x_flyby_out)
+
+line_array, mining_ship = GTOC12.record_line(line_array, "earth_flyby", flyby_states, ET_flyby, mining_ship)
 
 
 
@@ -108,3 +132,4 @@ plot_body(asteroid; ETs=ETs, color="Red")
 plot_body!(GTOC12.Earth; ETs=ETs, color="Blue")
 plot_coast!(x₀⁺, Δt; label="Coast 1", color="Green")
 plot!(r_burn_arc_1[:,1], r_burn_arc_1[:,2], r_burn_arc_1[:,3], color="cyan", label="steered burn 1")
+plot!(r_burn_arc_2[:,1], r_burn_arc_2[:,2], r_burn_arc_2[:,3], color="magenta", label="steered burn 2")

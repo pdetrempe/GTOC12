@@ -159,8 +159,6 @@ end
 
 function bc_rendezvous_cartesian_from_Earth!(residual, state, p, t)
     # For a rendezvous from Earth, we can actually vary the starting velocity and let the LV az/el clean up the rest
-
-    # u[1] is the beginning of the time span, and u[end] is the ending
     x0, m0, xf, μ, CDU, CTU = p
 
     # Try converting to Cartesian for better approximation of actual Constraints
@@ -196,6 +194,38 @@ function bc_rendezvous_cartesian_from_Earth!(residual, state, p, t)
 end
 
 # TODO: Make Cartesian version of boundary condition
+function bc_intercept_cartesian!(residual, state, p, t)
+    x0, m0, xf, μ, CDU, CTU = p
+
+    # Try converting to Cartesian for better approximation of actual Constraints
+    MEE_current_end = state[end]
+    MEE_current_start = state[1]
+    x_end_canon = MEE2Cartesian(MEE_current_end[1:6]; μ=μ)
+    x_start_canon = MEE2Cartesian(MEE_current_start[1:6]; μ=μ)
+
+    pos_vel_ratio = 1e-6 # Constraint is 1000km vs. 1 m/s
+
+    # initial boundary value 
+    # ***********************************
+    residual[1] = (x_start_canon[1] - x0[1]* CDU * pos_vel_ratio)
+    residual[2] = (x_start_canon[2] - x0[2]* CDU * pos_vel_ratio)
+    residual[3] = (x_start_canon[3] - x0[3]* CDU * pos_vel_ratio)
+    residual[4] = (x_start_canon[4] - x0[4])* CDU/CTU
+    residual[5] = (x_start_canon[5] - x0[5])* CDU/CTU
+    residual[6] = (x_start_canon[6] - x0[6])* CDU/CTU
+
+    # final boundary value 
+    # ***********************************
+    residual[7] = (x_end_canon[1] - xf[1]) * CDU * pos_vel_ratio
+    residual[8] = (x_end_canon[2] - xf[2]) * CDU * pos_vel_ratio
+    residual[9] = (x_end_canon[3] - xf[3]) * CDU * pos_vel_ratio
+
+    # Initial mass constraint
+    # ***********************************
+    residual[10] = state[1][7] - m0
+    nothing
+end
+
 function bc_intercept!(residual, state, p, t)
     # u[1] is the beginning of the time span, and u[end] is the ending
     x0, m0, rf, μ, _, _ = p
@@ -249,7 +279,7 @@ end
 
 function calculate_intercept(x0, xf, Δt, t0; m0, μ=GTOC12.μ_☉, dt=24 * 3600, abstol=1e-6, reltol=1e-10, output_times=nothing, kwargs...)
     # Largely a wrapper for the DifferentialEquations.jl 2-point BVP
-    solve_bvp(x0, xf, Δt, t0; boundary_condition=bc_intercept!, m0=m0, μ=μ, dt=dt, abstol=abstol, reltol=reltol, output_times, kwargs...)
+    solve_bvp(x0, xf, Δt, t0; boundary_condition=bc_intercept_cartesian!, m0=m0, μ=μ, dt=dt, abstol=abstol, reltol=reltol, output_times, kwargs...)
 
 end
 
