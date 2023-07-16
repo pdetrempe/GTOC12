@@ -98,7 +98,8 @@ println("earth_intercept_resid $(x_burn_arc_2[end] - x_intercept)")
 line_array, mining_ship = GTOC12.record_line(line_array, "burn", x_burn_arc_2, time_vector_ET, mining_ship, control=T_vector)
 
 # Record the Earth flyby and drop off cargo
-flyby_states = [x_burn_arc_2[end]]
+v_in_flyby = x_burn_arc_2[end][4:6]
+flyby_states = [vcat(x_intercept[1:3], v_in_flyby)]
 ET_flyby = time_vector_ET[end]
 # Calculate post-flyby state and append it to flyby_states vector
 x_flyby_out = naive_flyby(; x⃗_inrt=flyby_states[1], epoch_et=ET_flyby, flyby_body=Earth)

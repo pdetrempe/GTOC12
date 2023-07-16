@@ -118,11 +118,13 @@ end
 function naive_flyby(; x⃗_inrt, epoch_et, flyby_body::Planet, rp=nothing)
     # TODO, take in a target v∞_out, calculate turn angle, ϕ, use that to calculate rp
     if rp === nothing
-        rp = flyby_body.r_peri_min
+        rp = flyby_body.r_peri_min*10
     end
 
     x⃗_fbbdy = get_body_state(flyby_body; ET=epoch_et) #spkgeo(fbbdyc, epoch_et, inrt_frame, CBc)[1]
+    println("x⃗_fbbdy $x⃗_fbbdy")
     x⃗∞in = x⃗_inrt - x⃗_fbbdy
+    println("x⃗∞in $x⃗∞in")
     r⃗∞ = view(x⃗∞in, 1:3)
     r∞ = norm(r⃗∞)
     v⃗∞ = view(x⃗∞in, 4:6)
@@ -146,17 +148,18 @@ function naive_flyby(; x⃗_inrt, epoch_et, flyby_body::Planet, rp=nothing)
     # epoch_et_out = epoch_et # + Δt
 
     x⃗∞out = Vector{Float64}(undef, 6)
-    x⃗∞out[1:3] = vrotv( # Mirror the radius vector "at infinity" about the periapsis vector
-        r⃗∞, # To be rotated
-        ecc, # periapsis vector (not required to be unit vector)
-        π # 180 degrees
-    )
+    x⃗∞out[1:3] = view(x⃗_fbbdy, 1:3)
+    # vrotv( # Mirror the radius vector "at infinity" about the periapsis vector
+    #     r⃗∞, # To be rotated
+    #     ecc, # periapsis vector (not required to be unit vector)
+    #     π # 180 degrees
+    # )
     x⃗∞out[4:6] = vrotv(
         v⃗∞,
         r⃗∞ × v⃗∞, # axis of rotation as specific angular momentum vector
         2 * asin(1 / e) # Vallado 4e Eq. 2-28 (p53), turn by the hyperbolic turn angle
-    )
+    ) + x⃗_fbbdy[4:6]
     # x⃗_fbbdy_out = spkgeo(fbbdyc, epoch_et_out, inrt_frame, CBc)[1]
 
-    return x⃗∞out + x⃗_fbbdy
+    return x⃗∞out
 end

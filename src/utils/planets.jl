@@ -46,7 +46,7 @@ argperi = deg2rad( 5.51107191497e1 ),
 mean_anom = deg2rad( 1.11218416921e1 ), 
 ET₀ = GTOC12.ET₀,
 μ = 3.24858592000e5 * 1000^3, # Convert to m^3/s^2
-r_peri_min = 6351.0 # Convert to m
+r_peri_min = 6351.0 *1000# Convert to m
 )
 
 const Earth = Planet(name="Earth", 
@@ -58,7 +58,7 @@ argperi = deg2rad( 2.62960364700e2 ),
 mean_anom = deg2rad( 3.58039899470e2  ), 
 ET₀ = GTOC12.ET₀,
 μ = 3.98600435436e5 * 1000^3, # Convert to m^3/s^2
-r_peri_min = 6678.0 # Convert to m
+r_peri_min = 6678.0*1000 # Convert to m
 )
 
 const Mars = Planet(name="Mars", 
@@ -70,6 +70,6 @@ argperi = deg2rad( 2.86731029267e2 ),
 mean_anom = deg2rad( 2.38232037154e2  ), 
 ET₀ = GTOC12.ET₀,
 μ = 4.28283752140e4 * 1000^3, # Convert to m^3/s^2
-r_peri_min = 3689.0# Convert to m
+r_peri_min = 3689.0 *1000 # Convert to m
 )
 
