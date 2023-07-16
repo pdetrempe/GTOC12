@@ -63,6 +63,11 @@ function record_line!(line_array::Vector{String}, event::String, state_in, time_
         event_ID = -3
         before_line = string(mining_ship.ship_ID, " ", event_ID, " ", time_vector, " ") * join(state[1], " ") * string(" ", mining_ship.mass_total) * "\n"
         line_array = push!(line_array, before_line)
+
+        # Remove all mined dirt at earth_flyby
+        mining_ship.mass_collected = 0
+        recalculate_mass!(mining_ship)
+
         after_line  = string(mining_ship.ship_ID, " ", event_ID, " ", time_vector, " ") * join(state[2], " ") * string(" ", mining_ship.mass_total) * "\n"
         line_array = push!(line_array, after_line)
     elseif event == "mars_flyby"

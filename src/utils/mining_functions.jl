@@ -21,12 +21,12 @@ function recover_a_miner(mining_ship::Mining_Ship, event_ID, recovery_time::Floa
     # for loop to protect for edge case with multiple miners on 1 asteroid 
     for deployed_time in mining_ship.asteroid_miner_dictionary["$event_ID"]
 
-        mining_ship.miner_count += 1
+        # mining_ship.miner_count += 1
         println("deployed_time $deployed_time")
         println("recovery_time $recovery_time")
     
         # This is in units of days since the Results file uses time in days
-        dirt = mining_ship.rate_of_mining * (recovery_time - deployed_time) / GTOC12.year2day
+        dirt = mining_ship.rate_of_mining * (recovery_time - deployed_time) / GTOC12.year2day - 0.1 # Eps just to make things more numerically stable
         println("dirt $dirt")
         mining_ship.mass_collected += dirt
     end
