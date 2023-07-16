@@ -18,7 +18,6 @@ module GTOC12
     include("dynamics/modified_equinoctial_elements.jl")
     include("dynamics/universal_variable.jl")
     include("dynamics/frame_conversions.jl")
-    include("dynamics/naive_flyby.jl")
 
 
     # Utilities
@@ -27,6 +26,7 @@ module GTOC12
     include("utils/celestial_body.jl")
     include("utils/asteroids.jl")
     include("utils/planets.jl")
+    include("dynamics/naive_flyby.jl")
     include("utils/defaults.jl")
     include("utils/helper_functions.jl")
     include("utils/structures.jl")

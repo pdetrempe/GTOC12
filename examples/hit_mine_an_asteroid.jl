@@ -15,7 +15,7 @@ x₀ = x_Earth + [0; 0; 0; DV₀[:]]
 
 # Transfer time
 # Δt = 0.3207 * 365 * 24 * 3600.0
-Δt = .4 * 365*24*3600
+Δt = .45 * 365*24*3600
 ΔV∞_max = 6000.0;
 
 # Fixed-time shooting to hit asteroid
@@ -35,7 +35,12 @@ every_day = 24 * 60 * 60
 x₀⁺, xₜ = fixed_time_single_shoot(x₀, Δt, r_target; print_iter=false)
 ΔV_departure_1 = (x₀⁺-x_Earth)[4:6]
 println("ΔV_departure_1 $(norm(ΔV_departure_1))")
-ΔV_arrival_1 = (xₜ-x_target)[4:6]
+
+
+# Try doing an intercept earlier on the trajectory, then rendezvousing from there
+dt_coast = 0.3 * GTOC12.year2sec
+x_burn_start = propagate_universal(x₀⁺, dt_coast)
+
 
 # Initialize Mining Ship
 mining_ship = GTOC12.Mining_Ship()
@@ -45,8 +50,9 @@ line_array, mining_ship = GTOC12.record_line!(line_array, "launch", [x_Earth, x�
 
 
 # hit an asteroid 
-t0 = ET_start
-x_spacecraft, T_spacecraft, time_ET, mass_out_1 = calculate_rendezvous_from_Earth(x₀⁺, x_target, Δt, t0; m0=mining_ship.mass_total,
+t0 = ET_start + dt_coast
+dt_burn = Δt - dt_coast
+x_spacecraft, T_spacecraft, time_ET, mass_out_1 = calculate_rendezvous_from_Earth(x_burn_start, x_target, Δt, t0; m0=mining_ship.mass_total,
                                                                     μ=GTOC12.μ_☉, dt=24*3600, output_times=every_day,
                                                                     abstol = 1e-9, reltol=1e-11)
 
@@ -72,7 +78,7 @@ println("mass post deploy 1: $(mining_ship.mass_total)")
 
 # Wait 10 years, then recover a miner
 t_wait = 10.5*365*24*3600
-ET_recover = time_ET[end] + t_wait
+ET_recover = 1.4776127999999104e9 #time_ET[end] + t_wait
 x_recover = propagate_universal(x_spacecraft[end], t_wait)
 line_array, mining_ship = GTOC12.record_line!(line_array, "rendezvous", x_recover, ET_recover, mining_ship, rendez_flag="recover", event_ID=ID_min)
 println("mass post recover 1: $(mining_ship.mass_total)")
