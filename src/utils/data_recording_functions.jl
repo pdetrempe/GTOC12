@@ -1,6 +1,6 @@
 
-function record_line(line_array::Vector{String}, event::String, state_in, time_vec_in, mining_ship::Mining_Ship;
-     control=nothing, rendez_flag::String="none", event_ID="ERROR")
+function record_line!(line_array::Vector{String}, event::String, state_in, time_vec_in, mining_ship::Mining_Ship;
+     control=nothing, mass_burned=0, rendez_flag::String="none", event_ID="ERROR")
     #new_line = DataFrame()
     #total_mass = mining_ship.mass_dry + mining_ship.mass_wet + mining_ship.mass_collected
     #line_array = []
@@ -23,6 +23,9 @@ function record_line(line_array::Vector{String}, event::String, state_in, time_v
         last_line  = string(mining_ship.ship_ID, " ", event_ID, " ", time_vector[end], " ") * join([0.0, 0.0, 0.0], " ") * "\n"
         line_array = push!(line_array, last_line)
 
+        # Update ship mass based on burn
+        mining_ship.mass_wet -= mass_burned
+        recalculate_mass!(mining_ship)
 
     elseif event == "rendezvous"
         # Event ID => asteroid ID 

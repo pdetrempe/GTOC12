@@ -32,7 +32,7 @@ mutable struct Mining_Ship
         miner_count = 20,                                   # (cnt)
         #miners_onboard = [GTOC12.asteroid_miner() for i in 1:miner_count],  # (-)
         mass_dry = 500.,                                    # (kg) 
-        mass_wet = 1300.,                                   # (kg)
+        mass_wet = 1700.,                                   # (kg)
         mass_collected = 0.0,                               # (kg)
         current_state = zeros(6),                           # [r, v]
         asteroid_miner_dictionary = Dict(),                 # 

@@ -122,9 +122,7 @@ function naive_flyby(; x⃗_inrt, epoch_et, flyby_body::Planet, rp=nothing)
     end
 
     x⃗_fbbdy = get_body_state(flyby_body; ET=epoch_et) #spkgeo(fbbdyc, epoch_et, inrt_frame, CBc)[1]
-    println("x⃗_fbbdy $x⃗_fbbdy")
     x⃗∞in = x⃗_inrt - x⃗_fbbdy
-    println("x⃗∞in $x⃗∞in")
     r⃗∞ = view(x⃗∞in, 1:3)
     r∞ = norm(r⃗∞)
     v⃗∞ = view(x⃗∞in, 4:6)
@@ -136,9 +134,6 @@ function naive_flyby(; x⃗_inrt, epoch_et, flyby_body::Planet, rp=nothing)
 
     # Use rp to calculate eccentricity
     e = 1 + v∞2*rp/μ_fbbdy
-    println("e $e")
-
-
 
     # ν̃ = acos((ecc ⋅ r⃗∞) / (e * r∞)) # Vallado 4e Eq. 2-86 (p100)
     # νin = rdv > 0 ? ν̃ : 2π - ν̃ # Correct for halfspace; true anomaly at SOI entry
