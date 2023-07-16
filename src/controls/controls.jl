@@ -1,4 +1,4 @@
-using DifferentialEquations: TwoPointBVProblem, Shooting, Vern7, solve, MIRK4
+using DifferentialEquations: TwoPointBVProblem, Shooting, Vern7, solve, SavingCallback, SavedValues
 
 export calculate_rendezvous,
     calculate_rendezvous_from_Earth,
@@ -16,6 +16,39 @@ function calculate_hamiltonian(x, p)
 
     H = T / m * δ_star + λ' * A + λ' * B * (T / m * δ_star * u_star)
     return H
+end
+
+function save_control_trn(state, t, integrator)
+    _, _, _, μ, CDU, CTU = integrator.p
+
+    # unpack state
+    x = view(state, 1:6)
+    λ = state[8:13]
+    λp = λ[1]
+    λp_dim = λp/CDU # Redimensionalize only co-state with a length dimension (all others unitless)
+    λ[1] = λp_dim
+
+    x_cart = MEE2Cartesian(x; μ=μ)
+    redimensionalize_state!(x_cart; CDU=CDU, CTU=CTU)
+    MEE_dim = Cartesian2MEE(x_cart; μ=GTOC12.μ_☉)
+
+    # Define B matrix (time varying)
+    # *************************************************
+    B = B_equinoctial(MEE_dim; μ=GTOC12.μ_☉)
+
+    # Optimal Control Strategy 
+    # *************************************************
+    u_star = -B' * λ / norm(B' * λ)
+    S = norm(B' * λ) .- 1.0
+    if S > 0
+        δ_star = 1.0
+    else
+        δ_star = 0.0
+    end
+
+    R_inrt2rtn = DCM_inertial_to_rtn(x_cart)
+
+    return R_inrt2rtn' * GTOC12.T_max * u_star * δ_star
 end
 
 function low_thrust_optimal_control!(dstate, state, p, t)
@@ -290,19 +323,23 @@ function solve_bvp(x0, xf, Δt, t0; boundary_condition, m0, μ=GTOC12.μ_☉, dt
     x0_canon, CDU, CTU, μ_canonical = get_canonical_state(x0; μ=μ)
     xf_canon = get_canonical_state(xf, CDU, CTU)
     MEE_init = Cartesian2MEE(x0_canon; μ=μ_canonical)
-
     state_init = vcat(MEE_init, m0, ones(6))
     tspan = canonical_time.((0.0, Δt); CTU=CTU)
     dt = canonical_time(dt; CTU=CTU)
+
+    # Create a callback to save the control values as we go
+    saved_values = SavedValues(Float64, Vector{Float64})
 
     # Pack up parameters and solve
     p = (x0_canon, m0, xf_canon, μ_canonical, CDU, CTU)
     bvp2 = TwoPointBVProblem(low_thrust_optimal_control!, boundary_condition, state_init, tspan, p)
     if output_times === nothing
-        sol = solve(bvp2, Shooting(Vern9()), dt=dt, abstol=abstol, reltol=reltol, kwargs...) # we need to use the MIRK4 solver for TwoPointBVProblem
+        sol = solve(bvp2, Shooting(Vern9()), callback=cb, dt=dt, abstol=abstol, reltol=reltol, kwargs...) # we need to use the MIRK4 solver for TwoPointBVProblem
     else
         output_times = canonical_time(output_times; CTU=CTU)
-        sol = solve(bvp2, Shooting(Vern9()), dt=dt, abstol=abstol, reltol=reltol, saveat=output_times, kwargs...) # we need to use the MIRK4 solver for TwoPointBVProblem
+        output_times_vec = [tspan[1]:output_times:tspan[2]; tspan[2]]
+        cb = SavingCallback(save_control_trn, saved_values; saveat=output_times_vec)
+        sol = solve(bvp2, Shooting(Vern9()), callback=cb, dt=dt, abstol=abstol, reltol=reltol, saveat=output_times, kwargs...) # we need to use the MIRK4 solver for TwoPointBVProblem
     end
 
     T_vector, time_vector_ET = calculate_optimal_control(sol, t0, CDU=CDU, CTU=CTU, μ=μ_canonical)
@@ -312,11 +349,12 @@ function solve_bvp(x0, xf, Δt, t0; boundary_condition, m0, μ=GTOC12.μ_☉, dt
     mass_out = [state[7] for state in sol.u]
     x_spacecraft = MEE2Cartesian.(MEE_out; μ=μ_canonical)
     redimensionalize_state!.(x_spacecraft; CDU=CDU, CTU=CTU)
-    return x_spacecraft, T_vector, time_vector_ET, mass_out
+    # saved_values.t *= CTU # NOTE: THis doesn't work, so beware of time on saved_values
+    return x_spacecraft, T_vector, time_vector_ET, mass_out, saved_values
 end
 
 function calculate_optimal_control(sol, t0; CDU, CTU, μ)
-    T = GTOC12.T_max / (CDU / CTU^2) # Max Thrust (kg-m/s^2). Non-dimensionalize
+    T = (GTOC12.T_max - 10*eps())/ (CDU / CTU^2) # Max Thrust (kg-m/s^2). Non-dimensionalize
     T_vector = zeros(length(sol.t), 3)
     time_vector_ET = zeros(length(sol.t))
     for (idx, state_aug) in enumerate(sol.u)
@@ -335,8 +373,8 @@ function calculate_optimal_control(sol, t0; CDU, CTU, μ)
             δ_star = 0.0
         end
         # Need to rotate control from RTN frame to inertial frame
-        R_inrt2lvlh = DCM_inertial_to_rtn(x)
-        T_vector[idx, :] = R_inrt2lvlh' * T * δ_star / m * u_star
+        R_inrt2rtn = DCM_inertial_to_rtn(x)
+        T_vector[idx, :] = R_inrt2rtn' * T * δ_star * u_star
         time_vector_ET[idx] = redimensionalize_time(sol.t[idx], CTU=CTU)
         # TODO update Mining Ship mass here?
     end

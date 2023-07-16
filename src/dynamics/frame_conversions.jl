@@ -10,7 +10,7 @@ function DCM_inertial_to_rtn(x⃗_inrt)
 
     ŷ = cross( ĥ, r̂ )
 
-    R_inrt2rtn = [r̂'; ŷ'; ĥ']
+    R_inrt2rtn = hcat(r̂, ŷ, ĥ)
 end
 
 function DCM_inertial_to_lvlh(x⃗_inrt)
