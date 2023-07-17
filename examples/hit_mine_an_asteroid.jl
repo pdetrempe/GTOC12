@@ -98,6 +98,9 @@ times = time_ET .- time_ET[1]
 interp_thrust_x = LinearInterpolation(times, [val[1] for val in saved_values.saveval])
 interp_thrust_y = LinearInterpolation(times, [val[2] for val in saved_values.saveval])
 interp_thrust_z = LinearInterpolation(times, [val[3] for val in saved_values.saveval])
+# interp_thrust_x = LinearInterpolation(times, [val for val in eachcol(T_spacecraft)[1]])
+# interp_thrust_y = LinearInterpolation(times, [val for val in eachcol(T_spacecraft)[2]])
+# interp_thrust_z = LinearInterpolation(times, [val for val in eachcol(T_spacecraft)[3]])
 interp_mass   = LinearInterpolation(times, mass_out_1)
 p = (interp_thrust_x, interp_thrust_y, interp_thrust_z, interp_mass)
 
@@ -107,6 +110,15 @@ sol2 = solve(prob, Vern9(), abstol = 1e-9, reltol=1e-11, tstops=every_day)
 x_sol = [state[1] for state in sol2.u]
 y_sol = [state[2] for state in sol2.u]
 z_sol = [state[3] for state in sol2.u]
+
+# x_save_val = [state[1] for state in saved_values.saveval]
+# y_save_val = [state[2] for state in saved_values.saveval]
+# z_save_val = [state[3] for state in saved_values.saveval]
+# plot(x_save_val)
+# plot!(y_save_val)
+# plot!(z_save_val)
+
+# plot!(T_spacecraft, label="T_spacecraft")
 
 #--------------------------------------------------------------------------------------------------------
 
@@ -180,4 +192,4 @@ plot_body!(GTOC12.Earth; ETs=ETs, color="Blue")
 plot_coast!(x₀⁺, Δt; label="Coast 1", color="Green")
 plot!(r_burn_arc_1[:,1], r_burn_arc_1[:,2], r_burn_arc_1[:,3], color="cyan", label="steered burn 1")
 # plot!(r_burn_arc_2[:,1], r_burn_arc_2[:,2], r_burn_arc_2[:,3], color="magenta", label="steered burn 2")
-plot!(x_sol, y_sol, z_sol, label = "extrapolated from controls")
+plot!(x_sol, y_sol, z_sol, label = "extrapolated from controls", color="magenta")

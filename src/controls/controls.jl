@@ -18,17 +18,21 @@ function calculate_hamiltonian(x, p)
     return H
 end
 
-function save_control_trn(state, t, integrator)
+function save_control_rtn(state, t, integrator)
     _, _, _, μ, CDU, CTU = integrator.p
 
     # unpack state
-    x = view(state, 1:6)
+    MEE = view(state, 1:6)
     λ = state[8:13]
     λp = λ[1]
-    λp_dim = λp/CDU # Redimensionalize only co-state with a length dimension (all others unitless)
-    λ[1] = λp_dim
+    λp = redimensionalize_time(λp; CTU=1/CTU) # Redimensionalize only co-state with a length dimension (all others unitless)
+    λ[1] = λp
 
-    x_cart = MEE2Cartesian(x; μ=μ)
+    λv = view(λ, 2:6)
+    redimensionalize_vel!(λv; CDU=CDU, CTU=CTU)
+
+
+    x_cart = MEE2Cartesian(MEE; μ=μ)
     redimensionalize_state!(x_cart; CDU=CDU, CTU=CTU)
     MEE_dim = Cartesian2MEE(x_cart; μ=GTOC12.μ_☉)
 
@@ -48,7 +52,7 @@ function save_control_trn(state, t, integrator)
 
     R_inrt2rtn = DCM_inertial_to_rtn(x_cart)
 
-    return R_inrt2rtn' * GTOC12.T_max * u_star * δ_star
+    return R_inrt2rtn * GTOC12.T_max * u_star * δ_star
 end
 
 function low_thrust_optimal_control!(dstate, state, p, t)
@@ -321,6 +325,7 @@ function solve_bvp(x0, xf, Δt, t0; boundary_condition, m0, μ=GTOC12.μ_☉, dt
 
     # Non-dimensionalize problem
     x0_canon, CDU, CTU, μ_canonical = get_canonical_state(x0; μ=μ)
+
     xf_canon = get_canonical_state(xf, CDU, CTU)
     MEE_init = Cartesian2MEE(x0_canon; μ=μ_canonical)
     state_init = vcat(MEE_init, m0, ones(6))
@@ -338,7 +343,7 @@ function solve_bvp(x0, xf, Δt, t0; boundary_condition, m0, μ=GTOC12.μ_☉, dt
     else
         output_times = canonical_time(output_times; CTU=CTU)
         output_times_vec = [tspan[1]:output_times:tspan[2]; tspan[2]]
-        cb = SavingCallback(save_control_trn, saved_values; saveat=output_times_vec)
+        cb = SavingCallback(save_control_rtn, saved_values; saveat=output_times_vec)
         sol = solve(bvp2, Shooting(Vern9()), callback=cb, dt=dt, abstol=abstol, reltol=reltol, saveat=output_times, kwargs...) # we need to use the MIRK4 solver for TwoPointBVProblem
     end
 
@@ -358,10 +363,10 @@ function calculate_optimal_control(sol, t0; CDU, CTU, μ)
     T_vector = zeros(length(sol.t), 3)
     time_vector_ET = zeros(length(sol.t))
     for (idx, state_aug) in enumerate(sol.u)
-        x = state_aug[1:6]
+        MEE = state_aug[1:6]
         m = state_aug[7]
         λ = state_aug[8:13]
-        B = B_equinoctial(x; μ=μ)
+        B = B_equinoctial(MEE; μ=μ)
 
         # Optimal Control Strategy 
         # *************************************************
@@ -373,7 +378,8 @@ function calculate_optimal_control(sol, t0; CDU, CTU, μ)
             δ_star = 0.0
         end
         # Need to rotate control from RTN frame to inertial frame
-        R_inrt2rtn = DCM_inertial_to_rtn(x)
+        x_cart = MEE2Cartesian(MEE; μ=μ)
+        R_inrt2rtn = DCM_inertial_to_rtn(x_cart)
         T_vector[idx, :] = R_inrt2rtn' * T * δ_star * u_star
         time_vector_ET[idx] = redimensionalize_time(sol.t[idx], CTU=CTU)
         # TODO update Mining Ship mass here?
