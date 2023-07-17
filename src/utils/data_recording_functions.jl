@@ -16,7 +16,8 @@ function record_line!(line_array::Vector{String}, event::String, state_in, time_
         line_array = push!(line_array, first_line)
 
         for (time, thrust) in zip(time_vector, eachrow(control))
-            line = string(mining_ship.ship_ID, " ", event_ID, " ", time, " ") * join(thrust, " ") * "\n"
+            thrust_string = replace(string(thrust), [',',']','['] => "")
+            line = string(mining_ship.ship_ID, " ", event_ID, " ", time, " ") * thrust_string * "\n"
             line_array = push!(line_array, line)
         end
 

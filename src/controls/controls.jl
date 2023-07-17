@@ -52,7 +52,7 @@ function save_control_rtn(state, t, integrator)
 
     R_inrt2rtn = DCM_inertial_to_rtn(x_cart)
 
-    return R_inrt2rtn * GTOC12.T_max * u_star * δ_star
+    return R_inrt2rtn * (GTOC12.T_max-10*eps()) * u_star * δ_star
 end
 
 function low_thrust_optimal_control!(dstate, state, p, t)
