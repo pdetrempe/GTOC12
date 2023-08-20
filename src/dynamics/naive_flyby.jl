@@ -74,45 +74,6 @@ function flyby_TOF(; x⃗∞, μ_CB_or_CB_name)
     return sqrt(-sma^3 / μ_CB) * 2 * (Hin - e * sinh(Hin)) # Vallado 4e Eq. 2-39 (p57) with simplifications since Hout = -Hin
 end
 
-function naive_flyby(; x⃗_inrt, epoch_et, flyby_body::String, CB::String=default_CB_str, inrt_frame=default_ref_frame)
-    fbbdyc = bodn2c(flyby_body)
-    CBc = bodn2c(CB)
-
-    x⃗_fbbdy = spkgeo(fbbdyc, epoch_et, inrt_frame, CBc)[1]
-    x⃗∞in = x⃗_inrt - x⃗_fbbdy
-    r⃗∞ = view(x⃗∞in, 1:3)
-    r∞ = norm(r⃗∞)
-    v⃗∞ = view(x⃗∞in, 4:6)
-    v∞2 = norm(v⃗∞)^2
-    rdv = r⃗∞ ⋅ v⃗∞
-    μ_fbbdy = bodvrd(flyby_body, "GM")[1]
-    ecc = ((v∞2 - μ_fbbdy / r∞) * r⃗∞ - (rdv) * v⃗∞) / μ_fbbdy # Vallado 4e Eq. 2-78 (p98)
-    e = norm(ecc)
-
-    ν̃ = acos((ecc ⋅ r⃗∞) / (e * r∞)) # Vallado 4e Eq. 2-86 (p100)
-    νin = rdv > 0 ? ν̃ : 2π - ν̃ # Correct for halfspace; true anomaly at SOI entry
-    Hin = 2 * atanh(sqrt((e - 1) / (e + 1)) * tan(νin / 2)) # Hyperbolic anomaly at SOI entry
-    sma = 1 / (2 / r∞ - v∞2 / μ_fbbdy) # Vallado 4e Eq. 2-74 (p96)
-    Δt = sqrt(-sma^3 / μ_CB) * 2 * (Hin - e * sinh(Hin)) # Vallado 4e Eq. 2-39 (p57) with simplifications since Hout = -Hin
-    epoch_et_out = epoch_et + Δt
-
-    x⃗∞out = Vector{Float64}(undef, 6)
-    x⃗∞out[1:3] = vrotv( # Mirror the radius vector "at infinity" about the periapsis vector
-        r⃗∞, # To be rotated
-        ecc, # periapsis vector (not required to be unit vector)
-        π # 180 degrees
-    )
-    x⃗∞out[4:6] = vrotv(
-        v⃗∞,
-        r⃗∞ × v⃗∞, # axis of rotation as specific angular momentum vector
-        2 * asin(1 / e) # Vallado 4e Eq. 2-28 (p53), turn by the hyperbolic turn angle
-    )
-    x⃗_fbbdy_out = spkgeo(fbbdyc, epoch_et_out, inrt_frame, CBc)[1]
-
-    return x⃗∞out + x⃗_fbbdy_out, epoch_et_out
-end
-
-
 function naive_flyby(; x⃗_inrt, epoch_et, flyby_body::Planet, rp=nothing)
     # TODO, take in a target v∞_out, calculate turn angle, ϕ, use that to calculate rp
     if rp === nothing
