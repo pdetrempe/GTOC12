@@ -14,11 +14,11 @@ jobs:
       fail-fast: false
       matrix:
         version:
-          - '1.9.1'
+          - '1.9.2'
         os:
           - ubuntu-latest
         arch:
-          - x86
+          - x64
     steps:
       - run: git config --global core.autocrlf false
       - uses: actions/checkout@v2

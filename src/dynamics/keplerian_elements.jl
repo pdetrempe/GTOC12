@@ -1,6 +1,8 @@
 using SPICE
 
-export e⃗, ν, a, i, Ω, ω, mean_motion, RV2COE, COE2RV, M2EH, EH2ν, M2ν, hyp_anom, ecc_anom, mean_anom
+export e⃗, ν, a, i, Ω, ω, mean_motion, RV2COE, COE2RV, M2EH, EH2ν, M2ν, hyp_anom, ecc_anom, mean_anom, get_GM
+
+get_GM(μ_CB_or_CB_name) = typeof(μ_CB_or_CB_name) != String ? μ_CB_or_CB_name : bodvrd(μ_CB_or_CB_name, "GM")[1] # if GM provided directly (is a number), use it, else retrieve from body name (String)
 
 function M2EH(; M, ecc, tol=1e-6)
     if ecc < 1
